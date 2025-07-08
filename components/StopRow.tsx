@@ -4,6 +4,7 @@ import { useRef } from 'react';
 export interface Stop {
   id: string;
   address: string;
+  time: number;
   eta?: string;
   etd?: string;
   job?: string;
@@ -30,6 +31,7 @@ export default function StopRow({ stop, onRemove, onDragStart, onDrop }: Props) 
       <td className="p-2 cursor-grab">☰</td>
       <td className="p-2">{stop.address}</td>
       <td className="p-2">{stop.job || '-'}</td>
+      <td className="p-2">{stop.time}</td>
       <td className="p-2 text-right">
         <button onClick={onRemove}>Remove</button>
       </td>
