@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import AddressInput from '../components/AddressInput';
 import RunTable from '../components/RunTable';
 import ShareModal from '../components/ShareModal';
@@ -7,6 +7,7 @@ import AuthHeader from '../components/AuthHeader';
 import MapView from '../components/MapView';
 import { encrypt } from '../lib/encryption';
 import { addMinutes, formatTime, parseTime } from '../lib/time';
+import { DateTime } from 'luxon';
 import Script from 'next/script';
 
 interface Stop {
@@ -15,7 +16,10 @@ interface Stop {
   time: number;
   eta?: string;
   etd?: string;
-  job?: string;
+  etaIso?: string;
+  etdIso?: string;
+  day?: number;
+  isAccom?: boolean;
 }
 
 declare global {
@@ -33,8 +37,13 @@ export default function Page() {
   const [shareUrl, setShareUrl] = useState('');
   const [dragging, setDragging] = useState<string | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
+  const [isOvernight, setIsOvernight] = useState(false);
+  const [accomodation, setAccomodation] = useState('');
+  const [stats, setStats] = useState<{travel:number; duration:number; avg:number; start:string; end:string} | null>(null);
 
   const MAX_STOPS = 20;
+  const BUSINESS_START = parseTime('08:30');
+  const BUSINESS_END = parseTime('17:30');
 
   const cleanLines = (text: string) =>
     text
@@ -50,22 +59,13 @@ export default function Page() {
     setBulkAddresses(lines.slice(0, MAX_STOPS).join('\n'));
   };
 
-  const stopsWithTimes = useMemo(() => {
-    if (stops.some((s) => s.eta)) return stops;
-    const start = parseTime('09:00');
-    let current = start;
-    return stops.map((s) => {
-      const eta = formatTime(current);
-      current = addMinutes(current, s.time);
-      const etd = formatTime(current);
-      return { ...s, eta, etd };
-    });
-  }, [stops]);
+  const stopsWithTimes = stops;
 
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('startAddress') : null;
     if (saved) setStartAddress(saved);
   }, []);
+
 
   const saveStart = () => {
     if (typeof window !== 'undefined') {
@@ -95,12 +95,72 @@ export default function Page() {
   };
 
   const changeTime = (id: string, t: number) => {
-    setStops(stops.map(s => s.id === id ? { ...s, time: t } : s));
+    const updated = stops.map(s => s.id === id ? { ...s, time: t } : s);
+    setStops(updated);
+    recalcRoute(updated);
   };
 
-  const remove = (id: string) => setStops(stops.filter(s => s.id !== id));
+const remove = (id: string) => {
+    const updated = stops.filter(s => s.id !== id);
+    setStops(updated);
+    recalcRoute(updated);
+  };
 
-  const recalcRoute = (currStops: Stop[]) => {
+  const applyAccommodation = useCallback((base: Stop[]) => {
+    const without = base.filter(s => s.id !== 'accom');
+    if (isOvernight && accomodation.trim()) {
+      return [...without, { id: 'accom', address: accomodation, time: 0, isAccom: true }];
+    }
+    return without;
+  }, [isOvernight, accomodation]);
+
+  const applyTimes = useCallback((currStops: Stop[], legs: google.maps.DirectionsLeg[]) => {
+    let current = BUSINESS_START;
+    let day = 1;
+    let travel = 0;
+    const result = currStops.map((stop, idx) => {
+      const leg = legs[idx];
+      if (leg && leg.duration) {
+        const min = leg.duration.value / 60;
+        travel += min;
+        current = addMinutes(current, min);
+        if (current > BUSINESS_END) {
+          day++;
+          current = BUSINESS_START.plus({ days: day - 1 });
+        }
+      }
+      const eta = current;
+      current = addMinutes(current, stop.time);
+      if (current > BUSINESS_END) {
+        day++;
+        current = BUSINESS_START.plus({ days: day - 1 });
+      }
+      const etd = current;
+      return {
+        ...stop,
+        eta: formatTime(eta),
+        etd: formatTime(etd),
+        etaIso: eta.toISO(),
+        etdIso: etd.toISO(),
+        day,
+      } as Stop;
+    });
+    const duration = result.length
+      ? DateTime.fromISO(result[result.length - 1].etdIso!).diff(DateTime.fromISO(result[0].etaIso!)).as('minutes')
+      : 0;
+    const avg = result.length ? travel / result.length : 0;
+    setStats({
+      travel: Math.round(travel),
+      duration: Math.round(duration),
+      avg: Math.round(avg),
+      start: result[0]?.eta ?? '',
+      end: result[result.length - 1]?.etd ?? '',
+    });
+    return result;
+  }, [BUSINESS_START, BUSINESS_END]);
+
+  const recalcRoute = useCallback((currStops: Stop[]) => {
+    const withAccom = applyAccommodation(currStops);
     if (!window.google || !startAddress) return;
     const svc = new window.google.maps.DirectionsService();
     setDirections(null);
@@ -110,7 +170,7 @@ export default function Page() {
         destination: startAddress,
         travelMode: window.google.maps.TravelMode.DRIVING,
         optimizeWaypoints: false,
-        waypoints: currStops.map((s) => ({ location: s.address, stopover: true })),
+        waypoints: withAccom.map((s) => ({ location: s.address, stopover: true })),
       },
       (res: google.maps.DirectionsResult, status: string) => {
         if (status !== 'OK' || !res.routes || !res.routes[0]) {
@@ -118,22 +178,16 @@ export default function Page() {
           return;
         }
         const legs = res.routes[0].legs;
-        let current = parseTime('09:00');
-        const updated = currStops.map((stop, idx) => {
-          const leg = legs[idx];
-          if (leg && leg.duration) {
-            current = addMinutes(current, leg.duration.value / 60);
-          }
-          const eta = formatTime(current);
-          current = addMinutes(current, stop.time);
-          const etd = formatTime(current);
-          return { ...stop, eta, etd };
-        });
+        const updated = applyTimes(withAccom, legs);
         setStops(updated);
         setDirections(res);
       }
     );
-  };
+  }, [startAddress, applyAccommodation, applyTimes]);
+
+  useEffect(() => {
+    if (stops.length > 0) recalcRoute(stops);
+  }, [isOvernight, accomodation, recalcRoute, stops]);
 
   const generateRoute = () => {
     const addrs = cleanLines(bulkAddresses);
@@ -162,20 +216,8 @@ export default function Page() {
         }
         const order = res.routes[0].waypoint_order;
         const ordered = order.map((i: number) => baseStops[i]);
-        const legs = res.routes[0].legs;
-        let current = parseTime('09:00');
-        const withTimes = ordered.map((stop, idx) => {
-          const leg = legs[idx];
-          if (leg && leg.duration) {
-            current = addMinutes(current, leg.duration.value / 60);
-          }
-          const eta = formatTime(current);
-          current = addMinutes(current, stop.time);
-          const etd = formatTime(current);
-          return { ...stop, eta, etd };
-        });
-        setStops(withTimes);
-        setDirections(res);
+        const finalStops = applyAccommodation(ordered);
+        recalcRoute(finalStops);
       }
     );
   };
@@ -218,6 +260,24 @@ export default function Page() {
           <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
           <button onClick={addAddressLine} className="px-4 py-2 border rounded">Add</button>
         </div>
+        <div className="flex items-center gap-2 mb-2">
+          <label>
+            <input
+              type="checkbox"
+              checked={isOvernight}
+              onChange={(e) => setIsOvernight(e.target.checked)}
+              className="mr-1"
+            />
+            Overnight
+          </label>
+          {isOvernight && (
+            <AddressInput
+              value={accomodation}
+              onChange={setAccomodation}
+              placeholder="Accomodation address"
+            />
+          )}
+        </div>
         <div className="mb-2">
           <textarea
             value={bulkAddresses}
@@ -235,6 +295,13 @@ export default function Page() {
           onDrop={onDrop}
           onTimeChange={changeTime}
         />
+        {stats && (
+          <div className="mt-2 text-sm">
+            {`Travel time: ${stats.travel} minutes | Avg travel per stop: ${stats.avg} mins`}
+            <br />
+            {`Total run: ${stats.start} to ${stats.end} (≈${(stats.duration/60).toFixed(1)} hrs)`}
+          </div>
+        )}
         <div className="mt-4 flex gap-2">
           <button onClick={generateRoute} className="px-4 py-2 border rounded">Generate Run</button>
           {stops.length > 0 && <ShareModal url={shareUrl} onShare={generateShare} />}
