@@ -11,6 +11,7 @@ export interface Stop {
   etdIso?: string;
   day?: number;
   isAccom?: boolean;
+  isStart?: boolean;
 }
 
 interface Props {
@@ -27,32 +28,43 @@ export default function StopRow({ stop, dragging, onRemove, onDragStart, onDrop,
   return (
     <tr
       ref={ref}
-      draggable
+      draggable={!stop.isAccom && !stop.isStart}
       onDragStart={onDragStart}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
-      className={`border-b cursor-move ${dragging ? 'opacity-50' : ''} ${stop.isAccom ? 'bg-gray-100 dark:bg-gray-900' : ''}`}
+      className={`border-b ${dragging ? 'opacity-50' : ''} ${
+        stop.isAccom
+          ? 'bg-gray-100 dark:bg-gray-900 italic text-gray-600 cursor-default'
+          : stop.isStart
+            ? 'font-semibold cursor-default'
+            : 'cursor-move'
+      }`}
     >
       <td className="p-2">☰</td>
-      <td className="p-2">{stop.address}</td>
+      <td className="p-2">
+        {stop.isAccom ? `🛏️ Overnight Stop - ${stop.address}` : stop.isStart ? 'Start / End Location' : stop.address}
+      </td>
       <td className="p-2">
         <input
           type="number"
           value={stop.time}
           onChange={(e) => onTimeChange(parseInt(e.target.value) || 0)}
-          className="border px-3 py-2 rounded w-16 dark:bg-gray-800 dark:text-white"
+          readOnly={stop.isAccom || stop.isStart}
+          className="border px-3 py-2 rounded w-16 dark:bg-gray-800 dark:text-white disabled:bg-gray-200"
         />
       </td>
       <td className="p-2">{stop.eta || '-'}</td>
       <td className="p-2">{stop.etd || '-'}</td>
       <td className="p-2 text-right">
-        <button
-          onClick={onRemove}
-          className="text-red-600 hover:text-red-800"
-          title="Remove stop"
-        >
-          ❌
-        </button>
+        {!(stop.isAccom || stop.isStart) && (
+          <button
+            onClick={onRemove}
+            className="text-red-600 hover:text-red-800"
+            title="Remove stop"
+          >
+            ❌
+          </button>
+        )}
       </td>
     </tr>
   );
