@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import AddressInput from '../components/AddressInput';
 import RunTable from '../components/RunTable';
 import ShareModal from '../components/ShareModal';
@@ -40,6 +40,8 @@ export default function Page() {
   const [isOvernight, setIsOvernight] = useState(false);
   const [accomodation, setAccomodation] = useState('');
   const [stats, setStats] = useState<{travel:number; duration:number; avg:number; start:string; end:string} | null>(null);
+  const [shouldRecalc, setShouldRecalc] = useState(false);
+  const stopsCountRef = useRef(0);
 
   const MAX_STOPS = 20;
   const BUSINESS_START = parseTime('08:30');
@@ -58,6 +60,10 @@ export default function Page() {
     }
     setBulkAddresses(lines.slice(0, MAX_STOPS).join('\n'));
   };
+
+  useEffect(() => {
+    stopsCountRef.current = stops.length;
+  }, [stops.length]);
 
   const stopsWithTimes = stops;
 
@@ -186,8 +192,15 @@ const remove = (id: string) => {
   }, [startAddress, applyAccommodation, applyTimes]);
 
   useEffect(() => {
-    if (stops.length > 0) recalcRoute(stops);
-  }, [isOvernight, accomodation, recalcRoute, stops]);
+    if (shouldRecalc && stops.length > 0) {
+      recalcRoute(stops);
+      setShouldRecalc(false);
+    }
+  }, [shouldRecalc, recalcRoute, stops]);
+
+  useEffect(() => {
+    if (stopsCountRef.current > 0) setShouldRecalc(true);
+  }, [isOvernight, accomodation]);
 
   const generateRoute = () => {
     const addrs = cleanLines(bulkAddresses);
