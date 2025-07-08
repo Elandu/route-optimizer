@@ -9,7 +9,14 @@ import { encrypt } from '../lib/encryption';
 import { addMinutes, formatTime, parseTime } from '../lib/time';
 import Script from 'next/script';
 
-interface Stop { id: string; address: string; time: number; job?: string; }
+interface Stop {
+  id: string;
+  address: string;
+  time: number;
+  eta?: string;
+  etd?: string;
+  job?: string;
+}
 
 declare global {
   interface Window {
@@ -26,8 +33,10 @@ export default function Page() {
   const [time, setTime] = useState(60);
   const [shareUrl, setShareUrl] = useState('');
   const [dragging, setDragging] = useState<string | null>(null);
+  const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
 
   const stopsWithTimes = useMemo(() => {
+    if (stops.some((s) => s.eta)) return stops;
     const start = parseTime('09:00');
     let current = start;
     return stops.map((s) => {
@@ -81,7 +90,7 @@ export default function Page() {
       alert('Please provide an address first');
       return;
     }
-    const baseStops = addrs.map(addr => ({ id: Date.now().toString() + Math.random(), address: addr, time: 60 }));
+    const baseStops = addrs.map(addr => ({ id: Date.now().toString() + Math.random(), address: addr, time }));
     setStops(baseStops);
     if (!window.google) return;
     const svc = new window.google.maps.DirectionsService();
@@ -93,12 +102,28 @@ export default function Page() {
         optimizeWaypoints: true,
         waypoints: baseStops.map(s => ({ location: s.address, stopover: true }))
       },
-      (res: any, status: string) => {
-        if (status === 'OK' && res.routes && res.routes[0]) {
-          const order = res.routes[0].waypoint_order;
-          const ordered = order.map((i: number) => baseStops[i]);
-          setStops(ordered);
+      (res: google.maps.DirectionsResult, status: string) => {
+        if (status !== 'OK' || !res.routes || !res.routes[0]) {
+          console.error('Route calculation failed:', status, res);
+          alert('Failed to generate route. Please check addresses.');
+          return;
         }
+        const order = res.routes[0].waypoint_order;
+        const ordered = order.map((i: number) => baseStops[i]);
+        const legs = res.routes[0].legs;
+        let current = parseTime('09:00');
+        const withTimes = ordered.map((stop, idx) => {
+          const leg = legs[idx];
+          if (leg && leg.duration) {
+            current = addMinutes(current, leg.duration.value / 60);
+          }
+          const eta = formatTime(current);
+          current = addMinutes(current, stop.time);
+          const etd = formatTime(current);
+          return { ...stop, eta, etd };
+        });
+        setStops(withTimes);
+        setDirections(res);
       }
     );
   };
@@ -149,7 +174,7 @@ export default function Page() {
             className="border px-2 py-1 rounded w-full h-40"
           />
         </div>
-        <MapView start={startAddress} stops={stops} />
+        <MapView start={startAddress} stops={stops} directions={directions} />
         <RunTable
           stops={stopsWithTimes}
           remove={remove}
