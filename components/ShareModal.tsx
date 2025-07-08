@@ -3,13 +3,14 @@ import { useState } from 'react';
 
 interface Props {
   url: string;
+  onShare?: () => void;
 }
 
-export default function ShareModal({ url }: Props) {
+export default function ShareModal({ url, onShare }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button onClick={() => setOpen(true)}>Share</button>
+      <button onClick={() => { onShare?.(); setOpen(true); }}>Share</button>
       {open && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
           <div className="bg-white p-4 rounded shadow max-w-sm w-full">

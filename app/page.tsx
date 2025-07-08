@@ -26,11 +26,11 @@ export default function Page() {
   const [shareUrl, setShareUrl] = useState('');
   const [dragging, setDragging] = useState<string | null>(null);
 
-  const addStop = () => {
+  const addAddressLine = () => {
     if (!address) return;
-    setStops([...stops, { id: Date.now().toString(), address, time }]);
+    const newline = bulkAddresses ? `\n${address}` : address;
+    setBulkAddresses(bulkAddresses + newline);
     setAddress('');
-    setTime(60);
   };
 
   const onDragStart = (id: string) => setDragging(id);
@@ -100,6 +100,16 @@ export default function Page() {
         <div className="flex gap-2 mb-2">
           <AddressInput value={startAddress} onChange={setStartAddress} placeholder="Start address" />
         </div>
+        <div className="flex gap-2 items-center mb-2">
+          <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
+          <input
+            type="number"
+            value={time}
+            onChange={(e) => setTime(parseInt(e.target.value) || 0)}
+            className="border px-2 py-1 rounded w-24"
+          />
+          <button onClick={addAddressLine} className="px-4 py-2 border rounded">Add</button>
+        </div>
         <div className="mb-2">
           <textarea
             value={bulkAddresses}
@@ -108,25 +118,12 @@ export default function Page() {
             className="border px-2 py-1 rounded w-full h-40"
           />
         </div>
-        <div className="mb-2">
-          <button onClick={generateRoute} className="px-4 py-2 border rounded">Generate Route</button>
-        </div>
-        <div className="flex gap-2 items-center">
-          <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
-          <input
-            type="number"
-            value={time}
-            onChange={(e) => setTime(parseInt(e.target.value) || 0)}
-            className="border px-2 py-1 rounded w-24"
-          />
-          <button onClick={addStop} className="px-4 py-2 border rounded">Add</button>
-        </div>
         <MapView start={startAddress} stops={stops} />
         <RunTable stops={stops} remove={remove} onDragStart={onDragStart} onDrop={onDrop} />
         {stops.length > 0 && (
           <div className="mt-4 flex gap-2">
-            <button onClick={generateShare} className="px-4 py-2 border rounded">Generate Share Link</button>
-            <ShareModal url={shareUrl} />
+            <button onClick={generateRoute} className="px-4 py-2 border rounded">Generate Run</button>
+            <ShareModal url={shareUrl} onShare={generateShare} />
           </div>
         )}
       </main>
