@@ -35,6 +35,22 @@ export default function Page() {
   const [dragging, setDragging] = useState<string | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
 
+  const MAX_STOPS = 20;
+
+  const cleanLines = (text: string) =>
+    text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l !== '');
+
+  const updateBulkAddresses = (text: string) => {
+    const lines = cleanLines(text);
+    if (lines.length > MAX_STOPS) {
+      alert(`Maximum ${MAX_STOPS} stops allowed`);
+    }
+    setBulkAddresses(lines.slice(0, MAX_STOPS).join('\n'));
+  };
+
   const stopsWithTimes = useMemo(() => {
     if (stops.some((s) => s.eta)) return stops;
     const start = parseTime('09:00');
@@ -59,9 +75,9 @@ export default function Page() {
   };
 
   const addAddressLine = () => {
-    if (!address) return;
+    if (!address.trim()) return;
     const newline = bulkAddresses ? `\n${address}` : address;
-    setBulkAddresses(bulkAddresses + newline);
+    updateBulkAddresses(bulkAddresses + newline);
     setAddress('');
   };
 
@@ -85,7 +101,7 @@ export default function Page() {
   const remove = (id: string) => setStops(stops.filter(s => s.id !== id));
 
   const generateRoute = () => {
-    const addrs = bulkAddresses.split('\n').map(a => a.trim()).filter(Boolean);
+    const addrs = cleanLines(bulkAddresses);
     if (addrs.length === 0 || !startAddress.trim()) {
       alert('Please provide an address first');
       return;
@@ -169,7 +185,7 @@ export default function Page() {
         <div className="mb-2">
           <textarea
             value={bulkAddresses}
-            onChange={(e) => setBulkAddresses(e.target.value)}
+            onChange={(e) => updateBulkAddresses(e.target.value)}
             placeholder="One address per line"
             className="border px-2 py-1 rounded w-full h-40"
           />
