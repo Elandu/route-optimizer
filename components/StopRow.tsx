@@ -12,12 +12,21 @@ export interface Stop {
 interface Props {
   stop: Stop;
   onRemove: () => void;
+  onDragStart: () => void;
+  onDrop: () => void;
 }
 
-export default function StopRow({ stop, onRemove }: Props) {
+export default function StopRow({ stop, onRemove, onDragStart, onDrop }: Props) {
   const ref = useRef<HTMLTableRowElement>(null);
   return (
-    <tr ref={ref} className="border-b">\
+    <tr
+      ref={ref}
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={onDrop}
+      className="border-b"
+    >
       <td className="p-2 cursor-grab">☰</td>
       <td className="p-2">{stop.address}</td>
       <td className="p-2">{stop.job || '-'}</td>
