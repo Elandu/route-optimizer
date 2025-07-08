@@ -8,6 +8,8 @@
  * Using @apply directly inside a global selector can cause build failures
  * in production environments, so we define a reusable class instead.
  */
-.transition-body {
-  @apply transition-colors duration-300 ease-in-out;
+@layer utilities {
+  .transition-body {
+    @apply transition-colors duration-300 ease-in-out;
+  }
 }
