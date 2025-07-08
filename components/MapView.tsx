@@ -86,5 +86,10 @@ export default function MapView({ start, stops, directions }: Props) {
     }
   }, [directions]);
 
-  return <div ref={mapRef} className="w-full h-64 border" />;
+  return (
+    <div
+      ref={mapRef}
+      className="h-[400px] rounded border overflow-hidden my-4 shadow-sm"
+    />
+  );
 }

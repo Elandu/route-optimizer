@@ -31,7 +31,7 @@ export default function StopRow({ stop, dragging, onRemove, onDragStart, onDrop,
       onDragStart={onDragStart}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
-      className={`border-b cursor-move ${dragging ? 'opacity-50' : ''} ${stop.isAccom ? 'bg-gray-100' : ''}`}
+      className={`border-b cursor-move ${dragging ? 'opacity-50' : ''} ${stop.isAccom ? 'bg-gray-100 dark:bg-gray-900' : ''}`}
     >
       <td className="p-2">☰</td>
       <td className="p-2">{stop.address}</td>
@@ -40,7 +40,7 @@ export default function StopRow({ stop, dragging, onRemove, onDragStart, onDrop,
           type="number"
           value={stop.time}
           onChange={(e) => onTimeChange(parseInt(e.target.value) || 0)}
-          className="border px-1 py-0.5 w-16 rounded"
+          className="border px-3 py-2 rounded w-16 dark:bg-gray-800 dark:text-white"
         />
       </td>
       <td className="p-2">{stop.eta || '-'}</td>

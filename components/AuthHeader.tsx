@@ -22,11 +22,17 @@ export default function AuthHeader() {
     }
   }, [theme]);
 
+  const toggleDarkMode = () =>
+    setTheme(theme === Theme.Light ? Theme.Dark : Theme.Light);
+
   return (
     <header className="flex justify-between items-center p-4 border-b">
       <div>{name}</div>
-      <button onClick={() => setTheme(theme === Theme.Light ? Theme.Dark : Theme.Light)}>
-        {theme === Theme.Dark ? 'Light' : 'Dark'} mode
+      <button
+        onClick={toggleDarkMode}
+        className="text-sm text-gray-600 dark:text-gray-300"
+      >
+        Toggle {theme === Theme.Dark ? 'Light' : 'Dark'} Mode
       </button>
     </header>
   );

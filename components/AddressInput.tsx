@@ -51,7 +51,7 @@ export default function AddressInput({ value, onChange, placeholder, title, aria
       {...inputProps}
       ref={ref}
       title={title}
-      className="border px-2 py-1 rounded w-full"
+      className="border px-3 py-2 rounded w-full dark:bg-gray-800 dark:text-white"
     />
   );
 }

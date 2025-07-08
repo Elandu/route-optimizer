@@ -254,11 +254,21 @@ const remove = (id: string) => {
             title="Starting Address"
             ariaLabel="Starting Address"
           />
-          <button onClick={saveStart} className="px-4 py-2 border rounded">Save</button>
+          <button
+            onClick={saveStart}
+            className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
+          >
+            Save
+          </button>
         </div>
         <div className="flex gap-2 items-center mb-2">
           <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
-          <button onClick={addAddressLine} className="px-4 py-2 border rounded">Add</button>
+          <button
+            onClick={addAddressLine}
+            className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
+          >
+            Add
+          </button>
         </div>
         <div className="flex items-center gap-2 mb-2">
           <label>
@@ -283,7 +293,7 @@ const remove = (id: string) => {
             value={bulkAddresses}
             onChange={(e) => updateBulkAddresses(e.target.value)}
             placeholder="One address per line"
-            className="border px-2 py-1 rounded w-full h-40"
+            className="border px-3 py-2 rounded w-full h-40 dark:bg-gray-800 dark:text-white"
           />
         </div>
         <MapView start={startAddress} stops={stops} directions={directions} />
@@ -303,7 +313,12 @@ const remove = (id: string) => {
           </div>
         )}
         <div className="mt-4 flex gap-2">
-          <button onClick={generateRoute} className="px-4 py-2 border rounded">Generate Run</button>
+          <button
+            onClick={generateRoute}
+            className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
+          >
+            Generate Run
+          </button>
           {stops.length > 0 && <ShareModal url={shareUrl} onShare={generateShare} />}
         </div>
       </main>
