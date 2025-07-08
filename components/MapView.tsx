@@ -17,17 +17,38 @@ export default function MapView({ start, stops }: Props) {
   const markers = useRef<google.maps.Marker[]>([]);
 
   useEffect(() => {
-    if (!window.google || !mapRef.current) return;
-    if (!gmap.current) {
+    function init() {
+      if (!window.google || !mapRef.current || gmap.current) return;
       gmap.current = new window.google.maps.Map(mapRef.current, {
         center: { lat: 0, lng: 0 },
         zoom: 2,
       });
     }
+    if (window.google) {
+      init();
+    } else {
+      const interval = setInterval(() => {
+        if (window.google) {
+          init();
+          clearInterval(interval);
+        }
+      }, 500);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   useEffect(() => {
-    if (!gmap.current || !window.google) return;
+    if (!window.google) return;
+    if (!gmap.current) {
+      if (mapRef.current) {
+        gmap.current = new window.google.maps.Map(mapRef.current, {
+          center: { lat: 0, lng: 0 },
+          zoom: 2,
+        });
+      } else {
+        return;
+      }
+    }
     const geocoder = new window.google.maps.Geocoder();
     markers.current.forEach(m => m.setMap(null));
     markers.current = [];

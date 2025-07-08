@@ -8,7 +8,7 @@ import MapView from '../components/MapView';
 import { encrypt } from '../lib/encryption';
 import Script from 'next/script';
 
-interface Stop { id: string; address: string; job?: string; }
+interface Stop { id: string; address: string; time: number; job?: string; }
 
 declare global {
   interface Window {
@@ -21,13 +21,15 @@ export default function Page() {
   const [startAddress, setStartAddress] = useState('');
   const [address, setAddress] = useState('');
   const [stops, setStops] = useState<Stop[]>([]);
+  const [time, setTime] = useState(60);
   const [shareUrl, setShareUrl] = useState('');
   const [dragging, setDragging] = useState<string | null>(null);
 
   const addStop = () => {
     if (!address) return;
-    setStops([...stops, { id: Date.now().toString(), address }]);
+    setStops([...stops, { id: Date.now().toString(), address, time }]);
     setAddress('');
+    setTime(60);
   };
 
   const onDragStart = (id: string) => setDragging(id);
@@ -78,8 +80,14 @@ export default function Page() {
             Paste
           </button>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
+          <input
+            type="number"
+            value={time}
+            onChange={(e) => setTime(parseInt(e.target.value) || 0)}
+            className="border px-2 py-1 rounded w-24"
+          />
           <button onClick={addStop} className="px-4 py-2 border rounded">Add</button>
         </div>
         <MapView start={startAddress} stops={stops} />

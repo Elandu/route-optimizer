@@ -16,6 +16,7 @@ export default function RunTable({ stops, remove, onDragStart, onDrop }: Props) 
           <th className="p-2"></th>
           <th className="p-2 text-left">Stop</th>
           <th className="p-2 text-left">Job</th>
+          <th className="p-2 text-left">Time (min)</th>
           <th className="p-2"></th>
         </tr>
       </thead>
