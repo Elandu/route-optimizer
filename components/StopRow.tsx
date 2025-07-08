@@ -7,7 +7,10 @@ export interface Stop {
   time: number;
   eta?: string;
   etd?: string;
-  job?: string;
+  etaIso?: string;
+  etdIso?: string;
+  day?: number;
+  isAccom?: boolean;
 }
 
 interface Props {
@@ -28,11 +31,10 @@ export default function StopRow({ stop, dragging, onRemove, onDragStart, onDrop,
       onDragStart={onDragStart}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
-      className={`border-b cursor-move ${dragging ? 'opacity-50' : ''}`}
+      className={`border-b cursor-move ${dragging ? 'opacity-50' : ''} ${stop.isAccom ? 'bg-gray-100' : ''}`}
     >
       <td className="p-2">☰</td>
       <td className="p-2">{stop.address}</td>
-      <td className="p-2">{stop.job || '-'}</td>
       <td className="p-2">
         <input
           type="number"

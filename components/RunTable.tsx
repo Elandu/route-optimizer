@@ -17,7 +17,6 @@ export default function RunTable({ stops, draggingId, remove, onDragStart, onDro
         <tr className="bg-gray-200 dark:bg-gray-700">
           <th className="p-2"></th>
           <th className="p-2 text-left">Stop</th>
-          <th className="p-2 text-left">Job</th>
           <th className="p-2 text-left">Time (min)</th>
           <th className="p-2 text-left">ETA</th>
           <th className="p-2 text-left">ETD</th>
@@ -25,17 +24,27 @@ export default function RunTable({ stops, draggingId, remove, onDragStart, onDro
         </tr>
       </thead>
       <tbody>
-        {stops.map((s) => (
-          <StopRow
-            key={s.id}
-            stop={s}
-            dragging={draggingId === s.id}
-            onRemove={() => remove(s.id)}
-            onDragStart={() => onDragStart(s.id)}
-            onDrop={() => onDrop(s.id)}
-            onTimeChange={(t) => onTimeChange(s.id, t)}
-          />
-        ))}
+        {stops.map((s, idx) => {
+          const showDay = idx === 0 || stops[idx - 1].day !== s.day;
+          return (
+            <>
+              {showDay && (
+                <tr className="bg-gray-100 dark:bg-gray-800 font-bold">
+                  <td className="p-2" colSpan={6}>{`Day ${s.day}`}</td>
+                </tr>
+              )}
+              <StopRow
+                key={s.id}
+                stop={s}
+                dragging={draggingId === s.id}
+                onRemove={() => remove(s.id)}
+                onDragStart={() => onDragStart(s.id)}
+                onDrop={() => onDrop(s.id)}
+                onTimeChange={(t) => onTimeChange(s.id, t)}
+              />
+            </>
+          );
+        })}
       </tbody>
     </table>
   );

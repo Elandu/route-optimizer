@@ -2,7 +2,7 @@ interface Stop {
   address: string;
   eta: string; // ISO
   etd: string; // ISO
-  job: string;
+  isAccom?: boolean;
 }
 
 export function generateICS(stops: Stop[], title = 'Inspection Run'): string {
@@ -14,7 +14,8 @@ export function generateICS(stops: Stop[], title = 'Inspection Run'): string {
   stops.forEach((s, i) => {
     lines.push('BEGIN:VEVENT');
     lines.push(`UID:${i}@inspection`);
-    lines.push(`SUMMARY:${s.job}`);
+    const summary = s.isAccom ? 'Accommodation' : `Stop ${i + 1}`;
+    lines.push(`SUMMARY:${summary}`);
     lines.push(`LOCATION:${s.address}`);
     lines.push(`DTSTART:${s.eta.replace(/[-:]/g, '')}`);
     lines.push(`DTEND:${s.etd.replace(/[-:]/g, '')}`);
