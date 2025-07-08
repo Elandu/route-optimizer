@@ -6,16 +6,22 @@ type Props = {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
+  title?: string;
+  ariaLabel?: string;
 };
 
-export default function AddressInput({ value, onChange, placeholder }: Props) {
+export default function AddressInput({ value, onChange, placeholder, title, ariaLabel }: Props) {
   const ref = useRef<HTMLInputElement>(null);
-  const { inputProps } = useTextField({
-    value,
-    onChange,
-    placeholder,
-    inputElementType: 'input',
-  }, ref);
+  const { inputProps } = useTextField(
+    {
+      value,
+      onChange,
+      placeholder,
+      'aria-label': ariaLabel,
+      inputElementType: 'input',
+    },
+    ref
+  );
 
   useEffect(() => {
     let ac: google.maps.places.Autocomplete | null = null;
@@ -44,6 +50,7 @@ export default function AddressInput({ value, onChange, placeholder }: Props) {
     <input
       {...inputProps}
       ref={ref}
+      title={title}
       className="border px-2 py-1 rounded w-full"
     />
   );

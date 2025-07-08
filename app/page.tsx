@@ -30,7 +30,6 @@ export default function Page() {
   const [address, setAddress] = useState('');
   const [bulkAddresses, setBulkAddresses] = useState('');
   const [stops, setStops] = useState<Stop[]>([]);
-  const [time, setTime] = useState(60);
   const [shareUrl, setShareUrl] = useState('');
   const [dragging, setDragging] = useState<string | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
@@ -75,6 +74,7 @@ export default function Page() {
     const [item] = newStops.splice(from, 1);
     newStops.splice(to, 0, item);
     setStops(newStops);
+    recalcRoute(newStops);
     setDragging(null);
   };
 
@@ -84,16 +84,52 @@ export default function Page() {
 
   const remove = (id: string) => setStops(stops.filter(s => s.id !== id));
 
+  const recalcRoute = (currStops: Stop[]) => {
+    if (!window.google || !startAddress) return;
+    const svc = new window.google.maps.DirectionsService();
+    setDirections(null);
+    svc.route(
+      {
+        origin: startAddress,
+        destination: startAddress,
+        travelMode: window.google.maps.TravelMode.DRIVING,
+        optimizeWaypoints: false,
+        waypoints: currStops.map((s) => ({ location: s.address, stopover: true })),
+      },
+      (res: google.maps.DirectionsResult, status: string) => {
+        if (status !== 'OK' || !res.routes || !res.routes[0]) {
+          console.error('Route recalculation failed:', status, res);
+          return;
+        }
+        const legs = res.routes[0].legs;
+        let current = parseTime('09:00');
+        const updated = currStops.map((stop, idx) => {
+          const leg = legs[idx];
+          if (leg && leg.duration) {
+            current = addMinutes(current, leg.duration.value / 60);
+          }
+          const eta = formatTime(current);
+          current = addMinutes(current, stop.time);
+          const etd = formatTime(current);
+          return { ...stop, eta, etd };
+        });
+        setStops(updated);
+        setDirections(res);
+      }
+    );
+  };
+
   const generateRoute = () => {
     const addrs = bulkAddresses.split('\n').map(a => a.trim()).filter(Boolean);
     if (addrs.length === 0 || !startAddress.trim()) {
       alert('Please provide an address first');
       return;
     }
-    const baseStops = addrs.map(addr => ({ id: Date.now().toString() + Math.random(), address: addr, time }));
+    const baseStops = addrs.map(addr => ({ id: Date.now().toString() + Math.random(), address: addr, time: 60 }));
     setStops(baseStops);
     if (!window.google) return;
     const svc = new window.google.maps.DirectionsService();
+    setDirections(null);
     svc.route(
       {
         origin: startAddress,
@@ -153,17 +189,17 @@ export default function Page() {
       <AuthHeader />
       <main className="p-4 max-w-2xl mx-auto">
         <div className="flex gap-2 mb-2">
-          <AddressInput value={startAddress} onChange={setStartAddress} placeholder="Start address" />
+          <AddressInput
+            value={startAddress}
+            onChange={setStartAddress}
+            placeholder="Start address"
+            title="Starting Address"
+            ariaLabel="Starting Address"
+          />
           <button onClick={saveStart} className="px-4 py-2 border rounded">Save</button>
         </div>
         <div className="flex gap-2 items-center mb-2">
           <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
-          <input
-            type="number"
-            value={time}
-            onChange={(e) => setTime(parseInt(e.target.value) || 0)}
-            className="border px-2 py-1 rounded w-24"
-          />
           <button onClick={addAddressLine} className="px-4 py-2 border rounded">Add</button>
         </div>
         <div className="mb-2">
@@ -177,6 +213,7 @@ export default function Page() {
         <MapView start={startAddress} stops={stops} directions={directions} />
         <RunTable
           stops={stopsWithTimes}
+          draggingId={dragging}
           remove={remove}
           onDragStart={onDragStart}
           onDrop={onDrop}
