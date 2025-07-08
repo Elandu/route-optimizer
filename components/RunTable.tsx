@@ -4,9 +4,11 @@ import StopRow, { Stop } from './StopRow';
 interface Props {
   stops: Stop[];
   remove: (id: string) => void;
+  onDragStart: (id: string) => void;
+  onDrop: (id: string) => void;
 }
 
-export default function RunTable({ stops, remove }: Props) {
+export default function RunTable({ stops, remove, onDragStart, onDrop }: Props) {
   return (
     <table className="w-full border mt-4 text-sm">
       <thead>
@@ -19,7 +21,13 @@ export default function RunTable({ stops, remove }: Props) {
       </thead>
       <tbody>
         {stops.map((s) => (
-          <StopRow key={s.id} stop={s} onRemove={() => remove(s.id)} />
+          <StopRow
+            key={s.id}
+            stop={s}
+            onRemove={() => remove(s.id)}
+            onDragStart={() => onDragStart(s.id)}
+            onDrop={() => onDrop(s.id)}
+          />
         ))}
       </tbody>
     </table>

@@ -4,6 +4,7 @@ import AddressInput from '../components/AddressInput';
 import RunTable from '../components/RunTable';
 import ShareModal from '../components/ShareModal';
 import AuthHeader from '../components/AuthHeader';
+import MapView from '../components/MapView';
 import { encrypt } from '../lib/encryption';
 import Script from 'next/script';
 
@@ -17,14 +18,29 @@ declare global {
 }
 
 export default function Page() {
+  const [startAddress, setStartAddress] = useState('');
   const [address, setAddress] = useState('');
   const [stops, setStops] = useState<Stop[]>([]);
   const [shareUrl, setShareUrl] = useState('');
+  const [dragging, setDragging] = useState<string | null>(null);
 
   const addStop = () => {
     if (!address) return;
     setStops([...stops, { id: Date.now().toString(), address }]);
     setAddress('');
+  };
+
+  const onDragStart = (id: string) => setDragging(id);
+
+  const onDrop = (id: string) => {
+    if (!dragging || dragging === id) return;
+    const newStops = [...stops];
+    const from = newStops.findIndex((s) => s.id === dragging);
+    const to = newStops.findIndex((s) => s.id === id);
+    const [item] = newStops.splice(from, 1);
+    newStops.splice(to, 0, item);
+    setStops(newStops);
+    setDragging(null);
   };
 
   const remove = (id: string) => setStops(stops.filter(s => s.id !== id));
@@ -53,11 +69,21 @@ export default function Page() {
     <div>
       <AuthHeader />
       <main className="p-4 max-w-2xl mx-auto">
+        <div className="flex gap-2 mb-2">
+          <AddressInput value={startAddress} onChange={setStartAddress} placeholder="Start address" />
+          <button
+            onClick={async () => setStartAddress(await navigator.clipboard.readText())}
+            className="px-4 py-2 border rounded"
+          >
+            Paste
+          </button>
+        </div>
         <div className="flex gap-2">
           <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
           <button onClick={addStop} className="px-4 py-2 border rounded">Add</button>
         </div>
-        <RunTable stops={stops} remove={remove} />
+        <MapView start={startAddress} stops={stops} />
+        <RunTable stops={stops} remove={remove} onDragStart={onDragStart} onDrop={onDrop} />
         {stops.length > 0 && (
           <div className="mt-4 flex gap-2">
             <button onClick={generateShare} className="px-4 py-2 border rounded">Generate Share Link</button>
