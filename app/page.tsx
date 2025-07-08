@@ -6,7 +6,7 @@ import ShareModal from '../components/ShareModal';
 import AuthHeader from '../components/AuthHeader';
 import MapView from '../components/MapView';
 import { encrypt } from '../lib/encryption';
-import { addMinutes, formatTime, parseTime } from '../lib/time';
+import { addMinutes, formatTime } from '../lib/time';
 import { DateTime } from 'luxon';
 import Script from 'next/script';
 
@@ -47,9 +47,19 @@ export default function Page() {
   const [shouldRecalc, setShouldRecalc] = useState(false);
   const stopsCountRef = useRef(0);
 
+  const [startDate, setStartDate] = useState('');
+  const [startTime, setStartTime] = useState('08:30');
+
   const MAX_STOPS = 20;
-  const BUSINESS_START = parseTime('08:30');
-  const BUSINESS_END = parseTime('17:30');
+
+  const startDateTime = useMemo(() => {
+    const date = startDate || DateTime.now().toFormat('yyyy-MM-dd');
+    const time = startTime || '08:30';
+    return DateTime.fromFormat(`${date} ${time}`, 'yyyy-MM-dd HH:mm');
+  }, [startDate, startTime]);
+
+  const businessStart = startDateTime;
+  const businessEnd = startDateTime.set({ hour: 17, minute: 30 });
 
   const cleanLines = (text: string) =>
     text
@@ -72,14 +82,28 @@ export default function Page() {
   const stopsWithTimes = timedStops;
 
   useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('startAddress') : null;
-    if (saved) setStartAddress(saved);
+    if (typeof window === 'undefined') return;
+    const addr = localStorage.getItem('startAddress');
+    const date = localStorage.getItem('startDate');
+    const time = localStorage.getItem('startTime');
+    if (addr) setStartAddress(addr);
+    if (date) setStartDate(date);
+    if (time) setStartTime(time);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('startAddress', startAddress);
+    localStorage.setItem('startDate', startDate);
+    localStorage.setItem('startTime', startTime);
+  }, [startAddress, startDate, startTime]);
 
 
   const saveStart = () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('startAddress', startAddress);
+      localStorage.setItem('startDate', startDate);
+      localStorage.setItem('startTime', startTime);
     }
   };
 
@@ -120,14 +144,16 @@ const remove = (id: string) => {
 
   const applyTimes = useCallback(
     (currStops: Stop[], legs: google.maps.DirectionsLeg[]) => {
-      let current = BUSINESS_START;
+      let current = businessStart;
+      let dayEnd = businessEnd;
       let day = 1;
       let travel = 0;
       const result: Stop[] = [];
 
       const nextDay = () => {
         day++;
-        current = BUSINESS_START.plus({ days: day - 1 });
+        current = businessStart.plus({ days: day - 1 });
+        dayEnd = businessEnd.plus({ days: day - 1 });
       };
 
       const pushOvernight = () => {
@@ -164,7 +190,7 @@ const remove = (id: string) => {
       currStops.forEach((stop, idx) => {
         const leg = legs[idx];
         const travelMin = leg && leg.duration ? leg.duration.value / 60 : 0;
-        if (addMinutes(current, travelMin) > BUSINESS_END) {
+        if (addMinutes(current, travelMin) > dayEnd) {
           pushOvernight();
         }
         current = addMinutes(current, travelMin);
@@ -180,7 +206,7 @@ const remove = (id: string) => {
           etdIso: etd.toISO(),
           day,
         });
-        if (idx < currStops.length - 1 && current > BUSINESS_END) {
+        if (idx < currStops.length - 1 && current > dayEnd) {
           pushOvernight();
         }
       });
@@ -188,7 +214,7 @@ const remove = (id: string) => {
       const lastLeg = legs[currStops.length];
       if (lastLeg && lastLeg.duration) {
         const min = lastLeg.duration.value / 60;
-        if (addMinutes(current, min) > BUSINESS_END) {
+        if (addMinutes(current, min) > dayEnd) {
           pushOvernight();
         }
         current = addMinutes(current, min);
@@ -217,7 +243,7 @@ const remove = (id: string) => {
 
       return result;
     },
-    [BUSINESS_START, BUSINESS_END, accomodation, isOvernight, startAddress]
+    [businessStart, businessEnd, accomodation, isOvernight, startAddress]
   );
 
   const recalcRoute = useCallback((currStops: Stop[]) => {
@@ -320,6 +346,18 @@ const remove = (id: string) => {
             placeholder="Start address"
             title="Starting Address"
             ariaLabel="Starting Address"
+          />
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="border rounded px-2 py-1"
+          />
+          <input
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="border rounded px-2 py-1"
           />
           <button
             onClick={saveStart}
