@@ -77,8 +77,11 @@ export default function Page() {
 
   const generateRoute = () => {
     const addrs = bulkAddresses.split('\n').map(a => a.trim()).filter(Boolean);
+    if (addrs.length === 0 || !startAddress.trim()) {
+      alert('Please provide an address first');
+      return;
+    }
     const baseStops = addrs.map(addr => ({ id: Date.now().toString() + Math.random(), address: addr, time: 60 }));
-    if (baseStops.length === 0) return;
     setStops(baseStops);
     if (!window.google) return;
     const svc = new window.google.maps.DirectionsService();
@@ -154,12 +157,10 @@ export default function Page() {
           onDrop={onDrop}
           onTimeChange={changeTime}
         />
-        {stops.length > 0 && (
-          <div className="mt-4 flex gap-2">
-            <button onClick={generateRoute} className="px-4 py-2 border rounded">Generate Run</button>
-            <ShareModal url={shareUrl} onShare={generateShare} />
-          </div>
-        )}
+        <div className="mt-4 flex gap-2">
+          <button onClick={generateRoute} className="px-4 py-2 border rounded">Generate Run</button>
+          {stops.length > 0 && <ShareModal url={shareUrl} onShare={generateShare} />}
+        </div>
       </main>
       <Script src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&language=en-AU&region=AU`} />
       <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
