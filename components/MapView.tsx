@@ -13,7 +13,7 @@ interface Props {
 
 export default function MapView({ start, stops }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const gmap = useRef<google.maps.Map>();
+  const gmap = useRef<google.maps.Map | null>(null);
   const markers = useRef<google.maps.Marker[]>([]);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export default function MapView({ start, stops }: Props) {
     const all = [start, ...stops.map(s => s.address)].filter(Boolean);
     if (all.length === 0) return;
     all.forEach((addr, i) => {
-      geocoder.geocode({ address: addr }, (res, status) => {
+      geocoder.geocode({ address: addr }, (res: any, status: string) => {
         if (status === 'OK' && res[0]) {
           if (i === 0) gmap.current!.setCenter(res[0].geometry.location);
           const marker = new window.google.maps.Marker({
