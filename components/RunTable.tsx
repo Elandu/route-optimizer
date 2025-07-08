@@ -12,15 +12,15 @@ interface Props {
 
 export default function RunTable({ stops, draggingId, remove, onDragStart, onDrop, onTimeChange }: Props) {
   return (
-    <table className="w-full border mt-4 text-sm">
-      <thead>
-        <tr className="bg-gray-200 dark:bg-gray-700">
+    <table className="w-full text-sm border-collapse mt-4">
+      <thead className="bg-gray-100 dark:bg-gray-800">
+        <tr className="text-left text-xs uppercase tracking-wider">
           <th className="p-2"></th>
           <th className="p-2 text-left">Stop</th>
           <th className="p-2 text-left">Time (min)</th>
           <th className="p-2 text-left">ETA</th>
           <th className="p-2 text-left">ETD</th>
-          <th className="p-2"></th>
+          <th className="p-2 text-red-500">✖</th>
         </tr>
       </thead>
       <tbody>
