@@ -13,5 +13,12 @@ declare global {
     class Geocoder {
       geocode(request: any, callback: (result: any, status: any) => void): void;
     }
+    namespace places {
+      class Autocomplete {
+        constructor(input: HTMLInputElement, opts?: any);
+        addListener(eventName: string, handler: () => void): void;
+        getPlace(): any;
+      }
+    }
   }
 }
