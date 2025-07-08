@@ -12,13 +12,14 @@ export interface Stop {
 
 interface Props {
   stop: Stop;
+  dragging: boolean;
   onRemove: () => void;
   onDragStart: () => void;
   onDrop: () => void;
   onTimeChange: (time: number) => void;
 }
 
-export default function StopRow({ stop, onRemove, onDragStart, onDrop, onTimeChange }: Props) {
+export default function StopRow({ stop, dragging, onRemove, onDragStart, onDrop, onTimeChange }: Props) {
   const ref = useRef<HTMLTableRowElement>(null);
   return (
     <tr
@@ -27,9 +28,9 @@ export default function StopRow({ stop, onRemove, onDragStart, onDrop, onTimeCha
       onDragStart={onDragStart}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
-      className="border-b"
+      className={`border-b cursor-move ${dragging ? 'opacity-50' : ''}`}
     >
-      <td className="p-2 cursor-grab">☰</td>
+      <td className="p-2">☰</td>
       <td className="p-2">{stop.address}</td>
       <td className="p-2">{stop.job || '-'}</td>
       <td className="p-2">
@@ -43,7 +44,13 @@ export default function StopRow({ stop, onRemove, onDragStart, onDrop, onTimeCha
       <td className="p-2">{stop.eta || '-'}</td>
       <td className="p-2">{stop.etd || '-'}</td>
       <td className="p-2 text-right">
-        <button onClick={onRemove}>Remove</button>
+        <button
+          onClick={onRemove}
+          className="text-red-600 hover:text-red-800"
+          title="Remove stop"
+        >
+          ❌
+        </button>
       </td>
     </tr>
   );

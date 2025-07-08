@@ -3,13 +3,14 @@ import StopRow, { Stop } from './StopRow';
 
 interface Props {
   stops: Stop[];
+  draggingId: string | null;
   remove: (id: string) => void;
   onDragStart: (id: string) => void;
   onDrop: (id: string) => void;
   onTimeChange: (id: string, time: number) => void;
 }
 
-export default function RunTable({ stops, remove, onDragStart, onDrop, onTimeChange }: Props) {
+export default function RunTable({ stops, draggingId, remove, onDragStart, onDrop, onTimeChange }: Props) {
   return (
     <table className="w-full border mt-4 text-sm">
       <thead>
@@ -28,6 +29,7 @@ export default function RunTable({ stops, remove, onDragStart, onDrop, onTimeCha
           <StopRow
             key={s.id}
             stop={s}
+            dragging={draggingId === s.id}
             onRemove={() => remove(s.id)}
             onDragStart={() => onDragStart(s.id)}
             onDrop={() => onDrop(s.id)}

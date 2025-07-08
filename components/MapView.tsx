@@ -22,8 +22,8 @@ export default function MapView({ start, stops, directions }: Props) {
     function init() {
       if (!window.google || !mapRef.current || gmap.current) return;
       gmap.current = new window.google.maps.Map(mapRef.current, {
-        center: { lat: 0, lng: 0 },
-        zoom: 2,
+        center: { lat: -25.2744, lng: 133.7751 },
+        zoom: 5,
       });
       renderer.current = new window.google.maps.DirectionsRenderer();
       renderer.current!.setMap(gmap.current);
@@ -46,8 +46,8 @@ export default function MapView({ start, stops, directions }: Props) {
     if (!gmap.current) {
       if (mapRef.current) {
         gmap.current = new window.google.maps.Map(mapRef.current, {
-          center: { lat: 0, lng: 0 },
-          zoom: 2,
+          center: { lat: -25.2744, lng: 133.7751 },
+          zoom: 5,
         });
       } else {
         return;
@@ -57,7 +57,11 @@ export default function MapView({ start, stops, directions }: Props) {
     markers.current.forEach(m => m.setMap(null));
     markers.current = [];
     const all = [start, ...stops.map(s => s.address)].filter(Boolean);
-    if (all.length === 0) return;
+    if (all.length === 0) {
+      gmap.current.setCenter({ lat: -25.2744, lng: 133.7751 });
+      gmap.current.setZoom(5);
+      return;
+    }
     all.forEach((addr, i) => {
       geocoder.geocode({ address: addr }, (res: any, status: string) => {
         if (status === 'OK' && res[0]) {
