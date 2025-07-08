@@ -58,8 +58,8 @@ export default function MapView({ start, stops, directions }: Props) {
     markers.current = [];
     const all = [start, ...stops.map(s => s.address)].filter(Boolean);
     if (all.length === 0) {
-      gmap.current.setCenter({ lat: -25.2744, lng: 133.7751 });
-      gmap.current.setZoom(5);
+      gmap.current!.setCenter({ lat: -25.2744, lng: 133.7751 });
+      gmap.current!.setZoom(5);
       return;
     }
     all.forEach((addr, i) => {
