@@ -9,12 +9,14 @@ interface Stop {
 interface Props {
   start: string;
   stops: Stop[];
+  directions?: google.maps.DirectionsResult | null;
 }
 
-export default function MapView({ start, stops }: Props) {
+export default function MapView({ start, stops, directions }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const gmap = useRef<google.maps.Map | null>(null);
   const markers = useRef<google.maps.Marker[]>([]);
+  const renderer = useRef<google.maps.DirectionsRenderer | null>(null);
 
   useEffect(() => {
     function init() {
@@ -23,6 +25,8 @@ export default function MapView({ start, stops }: Props) {
         center: { lat: 0, lng: 0 },
         zoom: 2,
       });
+      renderer.current = new window.google.maps.DirectionsRenderer();
+      renderer.current!.setMap(gmap.current);
     }
     if (window.google) {
       init();
@@ -68,6 +72,15 @@ export default function MapView({ start, stops }: Props) {
       });
     });
   }, [start, stops]);
+
+  useEffect(() => {
+    if (!renderer.current) return;
+    if (directions) {
+      renderer.current.setDirections(directions);
+    } else {
+      renderer.current.set('directions', null);
+    }
+  }, [directions]);
 
   return <div ref={mapRef} className="w-full h-64 border" />;
 }
