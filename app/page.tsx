@@ -20,6 +20,7 @@ interface Stop {
   etdIso?: string;
   day?: number;
   isAccom?: boolean;
+  isStart?: boolean;
 }
 
 declare global {
@@ -33,13 +34,16 @@ export default function Page() {
   const [startAddress, setStartAddress] = useState('');
   const [address, setAddress] = useState('');
   const [bulkAddresses, setBulkAddresses] = useState('');
+  // user provided stops (without start/end or accom rows)
   const [stops, setStops] = useState<Stop[]>([]);
+  // calculated stops with timings and extra rows
+  const [timedStops, setTimedStops] = useState<Stop[]>([]);
   const [shareUrl, setShareUrl] = useState('');
   const [dragging, setDragging] = useState<string | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [isOvernight, setIsOvernight] = useState(false);
   const [accomodation, setAccomodation] = useState('');
-  const [stats, setStats] = useState<{travel:number; duration:number; avg:number; start:string; end:string} | null>(null);
+  const [stats, setStats] = useState<{travel:number; avg:number; stops:number; days:number} | null>(null);
   const [shouldRecalc, setShouldRecalc] = useState(false);
   const stopsCountRef = useRef(0);
 
@@ -65,7 +69,7 @@ export default function Page() {
     stopsCountRef.current = stops.length;
   }, [stops.length]);
 
-  const stopsWithTimes = stops;
+  const stopsWithTimes = timedStops;
 
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem('startAddress') : null;
@@ -93,6 +97,7 @@ export default function Page() {
     const newStops = [...stops];
     const from = newStops.findIndex((s) => s.id === dragging);
     const to = newStops.findIndex((s) => s.id === id);
+    if (from === -1 || to === -1) return;
     const [item] = newStops.splice(from, 1);
     newStops.splice(to, 0, item);
     setStops(newStops);
@@ -101,72 +106,121 @@ export default function Page() {
   };
 
   const changeTime = (id: string, t: number) => {
-    const updated = stops.map(s => s.id === id ? { ...s, time: t } : s);
+    const updated = stops.map((s) => (s.id === id ? { ...s, time: t } : s));
     setStops(updated);
     recalcRoute(updated);
   };
 
 const remove = (id: string) => {
-    const updated = stops.filter(s => s.id !== id);
+    const updated = stops.filter((s) => s.id !== id);
     setStops(updated);
     recalcRoute(updated);
   };
 
-  const applyAccommodation = useCallback((base: Stop[]) => {
-    const without = base.filter(s => s.id !== 'accom');
-    if (isOvernight && accomodation.trim()) {
-      return [...without, { id: 'accom', address: accomodation, time: 0, isAccom: true }];
-    }
-    return without;
-  }, [isOvernight, accomodation]);
 
-  const applyTimes = useCallback((currStops: Stop[], legs: google.maps.DirectionsLeg[]) => {
-    let current = BUSINESS_START;
-    let day = 1;
-    let travel = 0;
-    const result = currStops.map((stop, idx) => {
-      const leg = legs[idx];
-      if (leg && leg.duration) {
-        const min = leg.duration.value / 60;
-        travel += min;
-        current = addMinutes(current, min);
-        if (current > BUSINESS_END) {
-          day++;
-          current = BUSINESS_START.plus({ days: day - 1 });
-        }
-      }
-      const eta = current;
-      current = addMinutes(current, stop.time);
-      if (current > BUSINESS_END) {
+  const applyTimes = useCallback(
+    (currStops: Stop[], legs: google.maps.DirectionsLeg[]) => {
+      let current = BUSINESS_START;
+      let day = 1;
+      let travel = 0;
+      const result: Stop[] = [];
+
+      const nextDay = () => {
         day++;
         current = BUSINESS_START.plus({ days: day - 1 });
-      }
-      const etd = current;
-      return {
-        ...stop,
-        eta: formatTime(eta),
-        etd: formatTime(etd),
-        etaIso: eta.toISO(),
-        etdIso: etd.toISO(),
+      };
+
+      const pushOvernight = () => {
+        if (!isOvernight || !accomodation.trim()) {
+          nextDay();
+          return;
+        }
+        result.push({
+          id: `accom-${day}`,
+          address: accomodation,
+          time: 0,
+          eta: formatTime(current),
+          etd: formatTime(current),
+          etaIso: current.toISO(),
+          etdIso: current.toISO(),
+          day,
+          isAccom: true,
+        });
+        nextDay();
+      };
+
+      result.push({
+        id: 'start',
+        address: startAddress,
+        time: 0,
+        eta: formatTime(current),
+        etd: formatTime(current),
+        etaIso: current.toISO(),
+        etdIso: current.toISO(),
         day,
-      } as Stop;
-    });
-    const duration = result.length
-      ? DateTime.fromISO(result[result.length - 1].etdIso!).diff(DateTime.fromISO(result[0].etaIso!)).as('minutes')
-      : 0;
-    const avg = result.length ? travel / result.length : 0;
-    setStats({
-      travel: Math.round(travel),
-      duration: Math.round(duration),
-      avg: Math.round(avg),
-      start: result[0]?.eta ?? '',
-      end: result[result.length - 1]?.etd ?? '',
-    });
-    return result;
-  }, [BUSINESS_START, BUSINESS_END]);
+        isStart: true,
+      });
+
+      currStops.forEach((stop, idx) => {
+        const leg = legs[idx];
+        const travelMin = leg && leg.duration ? leg.duration.value / 60 : 0;
+        if (addMinutes(current, travelMin) > BUSINESS_END) {
+          pushOvernight();
+        }
+        current = addMinutes(current, travelMin);
+        travel += travelMin;
+        const eta = current;
+        current = addMinutes(current, stop.time);
+        const etd = current;
+        result.push({
+          ...stop,
+          eta: formatTime(eta),
+          etd: formatTime(etd),
+          etaIso: eta.toISO(),
+          etdIso: etd.toISO(),
+          day,
+        });
+        if (idx < currStops.length - 1 && current > BUSINESS_END) {
+          pushOvernight();
+        }
+      });
+
+      const lastLeg = legs[currStops.length];
+      if (lastLeg && lastLeg.duration) {
+        const min = lastLeg.duration.value / 60;
+        if (addMinutes(current, min) > BUSINESS_END) {
+          pushOvernight();
+        }
+        current = addMinutes(current, min);
+        travel += min;
+      }
+
+      result.push({
+        id: 'end',
+        address: startAddress,
+        time: 0,
+        eta: formatTime(current),
+        etd: formatTime(current),
+        etaIso: current.toISO(),
+        etdIso: current.toISO(),
+        day,
+        isStart: true,
+      });
+
+      const avg = currStops.length ? travel / currStops.length : 0;
+      setStats({
+        travel: Math.round(travel),
+        avg: Math.round(avg),
+        stops: currStops.length,
+        days: day,
+      });
+
+      return result;
+    },
+    [BUSINESS_START, BUSINESS_END, accomodation, isOvernight, startAddress]
+  );
 
   const recalcRoute = useCallback((currStops: Stop[]) => {
-    const withAccom = applyAccommodation(currStops);
     if (!window.google || !startAddress) return;
     const svc = new window.google.maps.DirectionsService();
     setDirections(null);
@@ -176,7 +230,7 @@ const remove = (id: string) => {
         destination: startAddress,
         travelMode: window.google.maps.TravelMode.DRIVING,
         optimizeWaypoints: false,
-        waypoints: withAccom.map((s) => ({ location: s.address, stopover: true })),
+        waypoints: currStops.map((s) => ({ location: s.address, stopover: true })),
       },
       (res: google.maps.DirectionsResult, status: string) => {
         if (status !== 'OK' || !res.routes || !res.routes[0]) {
@@ -184,12 +238,12 @@ const remove = (id: string) => {
           return;
         }
         const legs = res.routes[0].legs;
-        const updated = applyTimes(withAccom, legs);
-        setStops(updated);
+        const updated = applyTimes(currStops, legs);
+        setTimedStops(updated);
         setDirections(res);
       }
     );
-  }, [startAddress, applyAccommodation, applyTimes]);
+  }, [startAddress, applyTimes]);
 
   useEffect(() => {
     if (shouldRecalc && stops.length > 0) {
@@ -229,8 +283,8 @@ const remove = (id: string) => {
         }
         const order = res.routes[0].waypoint_order;
         const ordered = order.map((i: number) => baseStops[i]);
-        const finalStops = applyAccommodation(ordered);
-        recalcRoute(finalStops);
+        setStops(ordered);
+        recalcRoute(ordered);
       }
     );
   };
@@ -309,7 +363,7 @@ const remove = (id: string) => {
             className="border px-3 py-2 rounded w-full h-40 dark:bg-gray-800 dark:text-white"
           />
         </div>
-        <MapView start={startAddress} stops={stops} directions={directions} />
+        <MapView start={startAddress} stops={timedStops} directions={directions} />
         <RunTable
           stops={stopsWithTimes}
           draggingId={dragging}
@@ -320,9 +374,13 @@ const remove = (id: string) => {
         />
         {stats && (
           <div className="mt-2 text-sm">
-            {`Travel time: ${stats.travel} minutes | Avg travel per stop: ${stats.avg} mins`}
+            {`Total travel time: ${stats.travel} mins`}
             <br />
-            {`Total run: ${stats.start} to ${stats.end} (≈${(stats.duration/60).toFixed(1)} hrs)`}
+            {`Average travel per stop: ${stats.avg} mins`}
+            <br />
+            {`Total stops: ${stats.stops}`}
+            <br />
+            {`Number of days: ${stats.days}`}
           </div>
         )}
         <div className="mt-4 flex gap-2">
