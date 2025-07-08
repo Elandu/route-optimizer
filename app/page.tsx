@@ -1,11 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AddressInput from '../components/AddressInput';
 import RunTable from '../components/RunTable';
 import ShareModal from '../components/ShareModal';
 import AuthHeader from '../components/AuthHeader';
 import MapView from '../components/MapView';
 import { encrypt } from '../lib/encryption';
+import { addMinutes, formatTime, parseTime } from '../lib/time';
 import Script from 'next/script';
 
 interface Stop { id: string; address: string; time: number; job?: string; }
@@ -26,6 +27,28 @@ export default function Page() {
   const [shareUrl, setShareUrl] = useState('');
   const [dragging, setDragging] = useState<string | null>(null);
 
+  const stopsWithTimes = useMemo(() => {
+    const start = parseTime('09:00');
+    let current = start;
+    return stops.map((s) => {
+      const eta = formatTime(current);
+      current = addMinutes(current, s.time);
+      const etd = formatTime(current);
+      return { ...s, eta, etd };
+    });
+  }, [stops]);
+
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('startAddress') : null;
+    if (saved) setStartAddress(saved);
+  }, []);
+
+  const saveStart = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('startAddress', startAddress);
+    }
+  };
+
   const addAddressLine = () => {
     if (!address) return;
     const newline = bulkAddresses ? `\n${address}` : address;
@@ -44,6 +67,10 @@ export default function Page() {
     newStops.splice(to, 0, item);
     setStops(newStops);
     setDragging(null);
+  };
+
+  const changeTime = (id: string, t: number) => {
+    setStops(stops.map(s => s.id === id ? { ...s, time: t } : s));
   };
 
   const remove = (id: string) => setStops(stops.filter(s => s.id !== id));
@@ -99,6 +126,7 @@ export default function Page() {
       <main className="p-4 max-w-2xl mx-auto">
         <div className="flex gap-2 mb-2">
           <AddressInput value={startAddress} onChange={setStartAddress} placeholder="Start address" />
+          <button onClick={saveStart} className="px-4 py-2 border rounded">Save</button>
         </div>
         <div className="flex gap-2 items-center mb-2">
           <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
@@ -119,7 +147,13 @@ export default function Page() {
           />
         </div>
         <MapView start={startAddress} stops={stops} />
-        <RunTable stops={stops} remove={remove} onDragStart={onDragStart} onDrop={onDrop} />
+        <RunTable
+          stops={stopsWithTimes}
+          remove={remove}
+          onDragStart={onDragStart}
+          onDrop={onDrop}
+          onTimeChange={changeTime}
+        />
         {stops.length > 0 && (
           <div className="mt-4 flex gap-2">
             <button onClick={generateRoute} className="px-4 py-2 border rounded">Generate Run</button>
