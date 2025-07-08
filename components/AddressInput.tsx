@@ -22,7 +22,7 @@ export default function AddressInput({ value, onChange, placeholder }: Props) {
     function init() {
       if (!window.google || !ref.current) return;
       ac = new window.google.maps.places.Autocomplete(ref.current!, { types: ['address'] });
-      ac.addListener('place_changed', () => {
+      ac!.addListener('place_changed', () => {
         const place = ac!.getPlace();
         if (place.formatted_address) onChange(place.formatted_address);
       });
