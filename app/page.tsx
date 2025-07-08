@@ -141,8 +141,8 @@ const remove = (id: string) => {
           time: 0,
           eta: formatTime(current),
           etd: formatTime(current),
-          etaIso: current.toISO(),
-          etdIso: current.toISO(),
+          etaIso: current.toISO() ?? undefined,
+          etdIso: current.toISO() ?? undefined,
           day,
           isAccom: true,
         });
@@ -155,8 +155,8 @@ const remove = (id: string) => {
         time: 0,
         eta: formatTime(current),
         etd: formatTime(current),
-        etaIso: current.toISO(),
-        etdIso: current.toISO(),
+        etaIso: current.toISO() ?? undefined,
+        etdIso: current.toISO() ?? undefined,
         day,
         isStart: true,
       });
@@ -176,8 +176,8 @@ const remove = (id: string) => {
           ...stop,
           eta: formatTime(eta),
           etd: formatTime(etd),
-          etaIso: eta.toISO(),
-          etdIso: etd.toISO(),
+          etaIso: eta.toISO() ?? undefined,
+          etdIso: etd.toISO() ?? undefined,
           day,
         });
         if (idx < currStops.length - 1 && current > BUSINESS_END) {
@@ -201,8 +201,8 @@ const remove = (id: string) => {
         time: 0,
         eta: formatTime(current),
         etd: formatTime(current),
-        etaIso: current.toISO(),
-        etdIso: current.toISO(),
+        etaIso: current.toISO() ?? undefined,
+        etdIso: current.toISO() ?? undefined,
         day,
         isStart: true,
       });
