@@ -1,5 +1,6 @@
 'use client';
-import { useState, useEffect, useMemo, useCallback, useRef, Key } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import type { Key } from '@react-types/shared';
 import { useTabListState, TabListState } from '@react-stately/tabs';
 import { useTab, useTabList, useTabPanel } from '@react-aria/tabs';
 import AddressInput from '../components/AddressInput';
@@ -84,7 +85,7 @@ export default function Page() {
 
   function TabPanel({ itemKey, children }: { itemKey: Key; children: React.ReactNode }) {
     const ref = useRef<HTMLDivElement>(null);
-    const { tabPanelProps } = useTabPanel({ key: itemKey }, tabState, ref);
+    const { tabPanelProps } = useTabPanel({}, tabState, ref);
     if (selectedKey !== itemKey) return null;
     return (
       <div {...tabPanelProps} ref={ref} className="mt-4">
