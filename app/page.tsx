@@ -53,6 +53,8 @@ export default function Page() {
   const [stats, setStats] = useState<{travel:number; avg:number; stops:number; days:number} | null>(null);
   const [shouldRecalc, setShouldRecalc] = useState(false);
   const stopsCountRef = useRef(0);
+  const [currentTab, setCurrentTab] = useState('run');
+  const [mapState, setMapState] = useState<{center: google.maps.LatLngLiteral | null; zoom: number | null}>({ center: null, zoom: null });
 
   const MAX_STOPS = 20;
 
@@ -336,7 +338,12 @@ const remove = (id: string) => {
         hoveredIndex={hoveredIdx}
         selectedIndex={selectedIdx}
         onHover={onHoverRow}
-        onSelect={onSelectRow}
+        onSelect={(idx) => {
+          onSelectRow(idx);
+          if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            setCurrentTab('map');
+          }
+        }}
       />
       {stats && (
         <div className="mt-2 text-sm">
@@ -360,8 +367,8 @@ const remove = (id: string) => {
   );
 
   const runMain = (
-    <main className="flex flex-col lg:flex-row w-full h-full overflow-hidden">
-      <div className="flex flex-col lg:w-[40%] h-screen">
+    <main className="flex flex-col md:flex-row w-full h-full overflow-hidden">
+      <div className="flex flex-col md:w-[40%] h-screen">
         <div className="flex flex-col gap-4 p-4 max-h-[50vh] overflow-y-auto border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
             <div className="flex flex-col">
@@ -426,7 +433,7 @@ const remove = (id: string) => {
           {tableContent}
         </div>
       </div>
-      <div className="lg:w-[60%] h-screen w-full overflow-hidden">
+      <div className="hidden md:block md:w-[60%] h-screen w-full overflow-hidden">
         <MapView
           start={startAddress}
           stops={timedStops}
@@ -434,9 +441,26 @@ const remove = (id: string) => {
           hoveredIndex={hoveredIdx}
           selectedIndex={selectedIdx}
           onSelect={onSelectRow}
+          mapState={mapState}
+          onMapStateChange={setMapState}
         />
       </div>
     </main>
+  );
+
+  const mapTab = (
+    <div className="md:hidden h-[70vh]">
+      <MapView
+        start={startAddress}
+        stops={timedStops}
+        directions={directions}
+        hoveredIndex={hoveredIdx}
+        selectedIndex={selectedIdx}
+        onSelect={onSelectRow}
+        mapState={mapState}
+        onMapStateChange={setMapState}
+      />
+    </div>
   );
 
   return (
@@ -444,8 +468,11 @@ const remove = (id: string) => {
       <AuthHeader />
       <Tabs
         defaultKey="run"
+        selectedKey={currentTab}
+        onChange={(k) => setCurrentTab(k as string)}
         items={[
           { key: 'run', title: 'Run', content: runMain },
+          { key: 'map', title: 'Map', content: mapTab },
           { key: 'settings', title: 'Settings', content: <div className="p-4">Settings coming soon</div> },
         ]}
       />

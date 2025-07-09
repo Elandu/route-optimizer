@@ -18,18 +18,22 @@ export interface TabItem {
 interface TabsProps {
   items: TabItem[];
   defaultKey?: string;
+  selectedKey?: string;
+  onChange?: (key: Key) => void;
 }
 
-export default function Tabs({items, defaultKey}: TabsProps) {
+export default function Tabs({items, defaultKey, selectedKey, onChange}: TabsProps) {
   const state = useTabListState<TabItem>({
     items,
     defaultSelectedKey: defaultKey ?? 'run',
+    selectedKey,
+    onSelectionChange: onChange,
   });
 
   const tabsRef = useRef<HTMLDivElement>(null);
   const { tabsProps } = useTabs({}, state, tabsRef);
   const listRef = useRef<HTMLDivElement>(null);
-  const {tabListProps} = useTabList({onSelectionChange: (k) => state.setSelectedKey(k)}, state, listRef);
+  const {tabListProps} = useTabList({}, state, listRef);
 
   return (
     <div {...tabsProps} ref={tabsRef}>
