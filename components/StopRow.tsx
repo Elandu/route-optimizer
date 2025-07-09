@@ -24,9 +24,26 @@ interface Props {
   onTimeChange: (time: number) => void;
   label: string;
   travelNext?: string;
+  hovered?: boolean;
+  selected?: boolean;
+  onHover?: (hover: boolean) => void;
+  onSelect?: () => void;
 }
 
-export default function StopRow({ stop, dragging, onRemove, onDragStart, onDrop, onTimeChange, label, travelNext }: Props) {
+export default function StopRow({
+  stop,
+  dragging,
+  onRemove,
+  onDragStart,
+  onDrop,
+  onTimeChange,
+  label,
+  travelNext,
+  hovered,
+  selected,
+  onHover,
+  onSelect,
+}: Props) {
   const ref = useRef<HTMLTableRowElement>(null);
   return (
     <tr
@@ -35,13 +52,16 @@ export default function StopRow({ stop, dragging, onRemove, onDragStart, onDrop,
       onDragStart={onDragStart}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
+      onMouseEnter={() => onHover?.(true)}
+      onMouseLeave={() => onHover?.(false)}
+      onClick={onSelect}
       className={`border-b ${dragging ? 'opacity-50' : ''} ${
         stop.isAccom
           ? 'bg-gray-100 dark:bg-gray-900 italic text-gray-600 cursor-default'
           : stop.isStart
             ? 'font-semibold cursor-default'
             : 'cursor-move'
-      }`}
+      } ${hovered || selected ? 'bg-gray-700 text-white' : ''}`}
     >
       <td className="p-2">☰</td>
       <td className="p-2 text-center">{label}</td>

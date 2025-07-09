@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 
 interface Stop {
   id: string;
@@ -10,13 +10,45 @@ interface Props {
   start: string;
   stops: Stop[];
   directions?: google.maps.DirectionsResult | null;
+  hoveredIndex?: number | null;
+  selectedIndex?: number | null;
+  onSelect?: (idx: number) => void;
 }
 
-export default function MapView({ start, stops, directions }: Props) {
+export default function MapView({
+  start,
+  stops,
+  directions,
+  hoveredIndex,
+  selectedIndex,
+  onSelect,
+}: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const gmap = useRef<google.maps.Map | null>(null);
   const markers = useRef<google.maps.Marker[]>([]);
   const renderer = useRef<google.maps.DirectionsRenderer | null>(null);
+
+  const defaultIcon = useMemo<google.maps.Icon>(
+    () => ({
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 8,
+      fillColor: '#4285F4',
+      fillOpacity: 0.9,
+      strokeWeight: 1,
+      strokeColor: '#ffffff',
+    }),
+    []
+  );
+
+  const highlightedIcon = useMemo<google.maps.Icon>(
+    () => ({
+      ...defaultIcon,
+      scale: 12,
+      fillColor: '#FFD700',
+      strokeColor: '#000',
+    }),
+    [defaultIcon]
+  );
 
   const indexToLabel = (i: number) => {
     if (i === 0) return '0';
@@ -78,7 +110,10 @@ export default function MapView({ start, stops, directions }: Props) {
             map: gmap.current!,
             position: res[0].geometry.location,
             label: indexToLabel(i),
+            icon: defaultIcon,
+            zIndex: i,
           });
+          marker.addListener('click', () => onSelect?.(i));
           markers.current.push(marker);
         }
       });
@@ -87,7 +122,21 @@ export default function MapView({ start, stops, directions }: Props) {
       gmap.current!.setCenter(center);
       gmap.current!.setZoom(zoom);
     }
-  }, [start, stops]);
+  }, [start, stops, defaultIcon, onSelect]);
+
+  useEffect(() => {
+    markers.current.forEach((m, i) => {
+      const highlight = i === hoveredIndex || i === selectedIndex;
+      m.setIcon(highlight ? highlightedIcon : defaultIcon);
+      m.setZIndex(highlight ? 999 : i);
+    });
+    if (selectedIndex != null) {
+      const pos = markers.current[selectedIndex]?.getPosition();
+      if (pos) {
+        gmap.current?.panTo(pos);
+      }
+    }
+  }, [hoveredIndex, selectedIndex, defaultIcon, highlightedIcon]);
 
   useEffect(() => {
     if (!renderer.current) return;

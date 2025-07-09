@@ -13,9 +13,24 @@ interface Props {
   onDragStart: (id: string) => void;
   onDrop: (id: string) => void;
   onTimeChange: (id: string, time: number) => void;
+  hoveredIndex: number | null;
+  selectedIndex: number | null;
+  onHover: (idx: number | null) => void;
+  onSelect: (idx: number) => void;
 }
 
-export default function RunTable({ stops, draggingId, remove, onDragStart, onDrop, onTimeChange }: Props) {
+export default function RunTable({
+  stops,
+  draggingId,
+  remove,
+  onDragStart,
+  onDrop,
+  onTimeChange,
+  hoveredIndex,
+  selectedIndex,
+  onHover,
+  onSelect,
+}: Props) {
   return (
     <table className="min-w-max w-full text-sm border-collapse mt-4">
       <thead className="bg-gray-100 dark:bg-gray-800">
@@ -50,6 +65,10 @@ export default function RunTable({ stops, draggingId, remove, onDragStart, onDro
                 onTimeChange={(t) => onTimeChange(s.id, t)}
                 label={indexToLabel(idx)}
                 travelNext={s.travelNext}
+                hovered={hoveredIndex === idx}
+                selected={selectedIndex === idx}
+                onHover={(h) => onHover(h ? idx : null)}
+                onSelect={() => onSelect(idx)}
               />
             </>
           );
