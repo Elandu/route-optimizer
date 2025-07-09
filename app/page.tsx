@@ -313,9 +313,9 @@ const remove = (id: string) => {
   return (
     <div>
       <AuthHeader />
-      <main className="p-4 max-w-5xl mx-auto grid md:grid-cols-2 md:grid-rows-2 gap-4">
-        <section className="p-4 border rounded shadow-sm">
-          <div className="flex gap-2 mb-2">
+      <main className="p-4 w-full max-w-5xl mx-auto grid gap-4 md:grid-cols-2 md:grid-rows-2 min-h-screen">
+        <section className="p-4 border rounded shadow-sm overflow-auto">
+          <div className="flex flex-wrap md:flex-nowrap gap-2 mb-2 items-end">
           <AddressInput
             value={startAddress}
             onChange={setStartAddress}
@@ -327,21 +327,21 @@ const remove = (id: string) => {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
+            className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full md:w-auto"
           />
           <input
             type="time"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
+            className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full md:w-auto"
           />
-          <label className="flex flex-col text-xs">
+          <label className="flex flex-col text-xs w-full md:w-auto">
             <span>End of Day Time (EOD)</span>
             <input
               type="time"
               value={eodTime}
               onChange={(e) => setEodTime(e.target.value)}
-              className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
+              className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full md:w-auto"
             />
           </label>
           <button
@@ -351,7 +351,7 @@ const remove = (id: string) => {
             Save
           </button>
           </div>
-          <div className="flex gap-2 items-center mb-2">
+          <div className="flex flex-wrap md:flex-nowrap gap-2 items-center mb-2">
           <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
           <button
             onClick={addAddressLine}
@@ -387,10 +387,10 @@ const remove = (id: string) => {
             />
           </div>
         </section>
-        <section className="p-4 border rounded shadow-sm">
+        <section className="p-4 border rounded shadow-sm overflow-auto">
           <MapView start={startAddress} stops={timedStops} directions={directions} />
         </section>
-        <section className="p-4 border rounded shadow-sm">
+        <section className="p-4 border rounded shadow-sm overflow-x-auto">
           <RunTable
           stops={stopsWithTimes}
           draggingId={dragging}
