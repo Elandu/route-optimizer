@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model RouteRun {
+  id             String   @id @default(uuid())
+  slug           String   @unique
+  createdAt      DateTime @default(now())
+  startTime      DateTime?
+  endTime        DateTime?
+  overnight      Boolean  @default(false)
+  inspectionMins Int?
+  addresses      Address[]
+}
+
+model Address {
+  id       String   @id @default(uuid())
+  runId    String
+  label    String
+  address  String
+  duration Int?
+  eta      DateTime?
+  etd      DateTime?
+  order    Int
+  run      RouteRun @relation(fields: [runId], references: [id])
+}
