@@ -370,15 +370,33 @@ const remove = (id: string) => {
             </div>
             <div className="flex flex-col">
               <label htmlFor="start-date" className="mb-1">Date</label>
-              <input id="start-date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white" />
+              <input
+                id="start-date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full"
+              />
             </div>
             <div className="flex flex-col">
               <label htmlFor="start-time" className="mb-1">Start Time</label>
-              <input id="start-time" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full" />
+              <input
+                id="start-time"
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full max-w-[160px]"
+              />
             </div>
             <div className="flex flex-col">
               <label htmlFor="end-time" className="mb-1">End Time</label>
-              <input id="end-time" type="time" value={eodTime} onChange={(e) => setEodTime(e.target.value)} className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full" />
+              <input
+                id="end-time"
+                type="time"
+                value={eodTime}
+                onChange={(e) => setEodTime(e.target.value)}
+                className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full max-w-[160px]"
+              />
             </div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
