@@ -23,13 +23,13 @@ interface TabsProps {
 export default function Tabs({items, defaultKey}: TabsProps) {
   const state = useTabListState<TabItem>({
     items,
-    defaultSelectedKey: defaultKey ?? items[0]?.key,
+    defaultSelectedKey: defaultKey ?? 'run',
   });
 
   const tabsRef = useRef<HTMLDivElement>(null);
   const { tabsProps } = useTabs({}, state, tabsRef);
   const listRef = useRef<HTMLDivElement>(null);
-  const {tabListProps} = useTabList({}, state, listRef);
+  const {tabListProps} = useTabList({onSelectionChange: (k) => state.setSelectedKey(k)}, state, listRef);
 
   return (
     <div {...tabsProps} ref={tabsRef}>
