@@ -46,6 +46,8 @@ export default function Page() {
   const [timedStops, setTimedStops] = useState<Stop[]>([]);
   const [shareUrl, setShareUrl] = useState('');
   const [dragging, setDragging] = useState<string | null>(null);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [isOvernight, setIsOvernight] = useState(false);
   const [accomodation, setAccomodation] = useState('');
@@ -108,6 +110,12 @@ export default function Page() {
     recalcRoute(newStops);
     setDragging(null);
   };
+
+  const onHoverRow = useCallback((idx: number | null) => setHoveredIdx(idx), []);
+
+  const onSelectRow = useCallback((idx: number) => {
+    setSelectedIdx(idx);
+  }, []);
 
   const changeTime = (id: string, t: number) => {
     const updated = stops.map((s) => (s.id === id ? { ...s, time: t } : s));
@@ -417,6 +425,10 @@ const remove = (id: string) => {
               onDragStart={onDragStart}
               onDrop={onDrop}
               onTimeChange={changeTime}
+              hoveredIndex={hoveredIdx}
+              selectedIndex={selectedIdx}
+              onHover={onHoverRow}
+              onSelect={onSelectRow}
             />
             {stats && (
               <div className="mt-2 text-sm">
@@ -439,7 +451,14 @@ const remove = (id: string) => {
           </div>
         </div>
         <div className="w-full lg:w-[60%] h-full flex-grow overflow-hidden">
-          <MapView start={startAddress} stops={timedStops} directions={directions} />
+          <MapView
+            start={startAddress}
+            stops={timedStops}
+            directions={directions}
+            hoveredIndex={hoveredIdx}
+            selectedIndex={selectedIdx}
+            onSelect={onSelectRow}
+          />
         </div>
       </main>
       <Script src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&language=en-AU&region=AU`} />
