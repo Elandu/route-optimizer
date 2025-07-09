@@ -12,7 +12,7 @@ interface Props {
 
 export default function RunTable({ stops, draggingId, remove, onDragStart, onDrop, onTimeChange }: Props) {
   return (
-    <table className="w-full text-sm border-collapse mt-4">
+    <table className="min-w-max w-full text-sm border-collapse mt-4">
       <thead className="bg-gray-100 dark:bg-gray-800">
         <tr className="text-left text-xs uppercase tracking-wider">
           <th className="p-2"></th>

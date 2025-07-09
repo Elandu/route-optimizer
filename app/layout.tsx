@@ -13,8 +13,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body
-        className="antialiased min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-body"
+        className="antialiased w-screen min-h-screen md:h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-body overflow-x-hidden"
       >
         {children}
       </body>

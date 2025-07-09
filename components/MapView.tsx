@@ -89,7 +89,7 @@ export default function MapView({ start, stops, directions }: Props) {
   return (
     <div
       ref={mapRef}
-      className="h-[400px] w-full overflow-hidden"
+      className="w-full h-full overflow-hidden"
     />
   );
 }
