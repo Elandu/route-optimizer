@@ -1,6 +1,26 @@
 'use client';
 import { useEffect, useRef, useMemo } from 'react';
 
+function getDefaultMarkerIcon(): google.maps.Icon | undefined {
+  if (typeof window !== 'undefined' && window.google?.maps) {
+    return {
+      url: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2_hdpi.png',
+      scaledSize: new window.google.maps.Size(27, 43),
+    };
+  }
+  return undefined;
+}
+
+function getHighlightedMarkerIcon(): google.maps.Icon | undefined {
+  if (typeof window !== 'undefined' && window.google?.maps) {
+    return {
+      url: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2_hdpi.png',
+      scaledSize: new window.google.maps.Size(32, 51),
+    };
+  }
+  return undefined;
+}
+
 interface Stop {
   id: string;
   address: string;
@@ -29,27 +49,8 @@ export default function MapView({
   const markers = useRef<google.maps.Marker[]>([]);
   const renderer = useRef<google.maps.DirectionsRenderer | null>(null);
 
-  const defaultIcon = useMemo<google.maps.Symbol>(
-    () => ({
-      path: google.maps.SymbolPath.CIRCLE,
-      scale: 8,
-      fillColor: '#4285F4',
-      fillOpacity: 0.9,
-      strokeWeight: 1,
-      strokeColor: '#ffffff',
-    }),
-    []
-  );
-
-  const highlightedIcon = useMemo<google.maps.Symbol>(
-    () => ({
-      ...defaultIcon,
-      scale: 12,
-      fillColor: '#FFD700',
-      strokeColor: '#000',
-    }),
-    [defaultIcon]
-  );
+  const defaultIcon = useMemo(getDefaultMarkerIcon, []);
+  const highlightedIcon = useMemo(getHighlightedMarkerIcon, []);
 
   const indexToLabel = (i: number) => {
     return String.fromCharCode('A'.charCodeAt(0) + i);
