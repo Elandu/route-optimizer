@@ -12,6 +12,7 @@ export interface Stop {
   day?: number;
   isAccom?: boolean;
   isStart?: boolean;
+  travelNext?: string;
 }
 
 interface Props {
@@ -21,9 +22,11 @@ interface Props {
   onDragStart: () => void;
   onDrop: () => void;
   onTimeChange: (time: number) => void;
+  label: string;
+  travelNext?: string;
 }
 
-export default function StopRow({ stop, dragging, onRemove, onDragStart, onDrop, onTimeChange }: Props) {
+export default function StopRow({ stop, dragging, onRemove, onDragStart, onDrop, onTimeChange, label, travelNext }: Props) {
   const ref = useRef<HTMLTableRowElement>(null);
   return (
     <tr
@@ -41,6 +44,7 @@ export default function StopRow({ stop, dragging, onRemove, onDragStart, onDrop,
       }`}
     >
       <td className="p-2">☰</td>
+      <td className="p-2 text-center">{label}</td>
       <td className="p-2">
         {stop.isAccom
           ? `🛏️ Overnight Stop - ${stop.address}`
@@ -61,6 +65,7 @@ export default function StopRow({ stop, dragging, onRemove, onDragStart, onDrop,
       </td>
       <td className="p-2">{stop.eta || '-'}</td>
       <td className="p-2">{stop.etd || '-'}</td>
+      <td className="p-2">{travelNext || '-'}</td>
       <td className="p-2 text-right">
         {!(stop.isAccom || stop.isStart) && (
           <button
