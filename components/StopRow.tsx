@@ -42,7 +42,13 @@ export default function StopRow({ stop, dragging, onRemove, onDragStart, onDrop,
     >
       <td className="p-2">☰</td>
       <td className="p-2">
-        {stop.isAccom ? `🛏️ Overnight Stop - ${stop.address}` : stop.isStart ? 'Start / End Location' : stop.address}
+        {stop.isAccom
+          ? `🛏️ Overnight Stop - ${stop.address}`
+          : stop.isStart && stop.id === 'end'
+            ? 'Return to Start / End Location'
+            : stop.isStart
+              ? 'Start / End Location'
+              : stop.address}
       </td>
       <td className="p-2">
         <input

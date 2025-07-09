@@ -32,6 +32,8 @@ declare global {
 
 export default function Page() {
   const [startAddress, setStartAddress] = useState('');
+  const [startDate, setStartDate] = useState(DateTime.now().toISODate());
+  const [startTime, setStartTime] = useState('08:30');
   const [address, setAddress] = useState('');
   const [bulkAddresses, setBulkAddresses] = useState('');
   // user provided stops (without start/end or accom rows)
@@ -48,8 +50,6 @@ export default function Page() {
   const stopsCountRef = useRef(0);
 
   const MAX_STOPS = 20;
-  const BUSINESS_START = parseTime('08:30');
-  const BUSINESS_END = parseTime('17:30');
 
   const cleanLines = (text: string) =>
     text
@@ -120,34 +120,11 @@ const remove = (id: string) => {
 
   const applyTimes = useCallback(
     (currStops: Stop[], legs: google.maps.DirectionsLeg[]) => {
-      let current = BUSINESS_START;
+      let current = DateTime.fromISO(`${startDate}T${startTime}`);
       let day = 1;
       let travel = 0;
       const result: Stop[] = [];
-
-      const nextDay = () => {
-        day++;
-        current = BUSINESS_START.plus({ days: day - 1 });
-      };
-
-      const pushOvernight = () => {
-        if (!isOvernight || !accomodation.trim()) {
-          nextDay();
-          return;
-        }
-        result.push({
-          id: `accom-${day}`,
-          address: accomodation,
-          time: 0,
-          eta: formatTime(current),
-          etd: formatTime(current),
-          etaIso: current.toISO() ?? undefined,
-          etdIso: current.toISO() ?? undefined,
-          day,
-          isAccom: true,
-        });
-        nextDay();
-      };
+      let dayEnd = current.set({ hour: 17, minute: 30 });
 
       result.push({
         id: 'start',
@@ -164,9 +141,6 @@ const remove = (id: string) => {
       currStops.forEach((stop, idx) => {
         const leg = legs[idx];
         const travelMin = leg && leg.duration ? leg.duration.value / 60 : 0;
-        if (addMinutes(current, travelMin) > BUSINESS_END) {
-          pushOvernight();
-        }
         current = addMinutes(current, travelMin);
         travel += travelMin;
         const eta = current;
@@ -180,17 +154,32 @@ const remove = (id: string) => {
           etdIso: etd.toISO() ?? undefined,
           day,
         });
-        if (idx < currStops.length - 1 && current > BUSINESS_END) {
-          pushOvernight();
+
+        if (etd > dayEnd) {
+          const overEta = etd;
+          const nextStart = overEta.plus({ days: 1 }).set({ hour: 8, minute: 30 });
+          if (isOvernight && accomodation.trim()) {
+            result.push({
+              id: `accom-${day}`,
+              address: accomodation,
+              time: 0,
+              eta: formatTime(overEta),
+              etd: formatTime(nextStart),
+              etaIso: overEta.toISO() ?? undefined,
+              etdIso: nextStart.toISO() ?? undefined,
+              day,
+              isAccom: true,
+            });
+          }
+          day++;
+          current = nextStart;
+          dayEnd = current.set({ hour: 17, minute: 30 });
         }
       });
 
       const lastLeg = legs[currStops.length];
       if (lastLeg && lastLeg.duration) {
         const min = lastLeg.duration.value / 60;
-        if (addMinutes(current, min) > BUSINESS_END) {
-          pushOvernight();
-        }
         current = addMinutes(current, min);
         travel += min;
       }
@@ -215,9 +204,18 @@ const remove = (id: string) => {
         days: day,
       });
 
-      return result;
+      // remove consecutive duplicate start rows on the same day
+      return result.filter(
+        (s, i, arr) =>
+          !(
+            s.isStart &&
+            i > 0 &&
+            arr[i - 1].isStart &&
+            arr[i - 1].day === s.day
+          )
+      );
     },
-    [BUSINESS_START, BUSINESS_END, accomodation, isOvernight, startAddress]
+    [startAddress, startDate, startTime, accomodation, isOvernight]
   );
 
   const recalcRoute = useCallback((currStops: Stop[]) => {
@@ -320,6 +318,18 @@ const remove = (id: string) => {
             placeholder="Start address"
             title="Starting Address"
             ariaLabel="Starting Address"
+          />
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
+          />
+          <input
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
           />
           <button
             onClick={saveStart}
