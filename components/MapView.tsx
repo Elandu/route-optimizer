@@ -35,6 +35,8 @@ interface Props {
   hoveredIndex?: number | null;
   selectedIndex?: number | null;
   onSelect?: (idx: number) => void;
+  mapState?: { center: google.maps.LatLngLiteral | null; zoom: number | null };
+  onMapStateChange?: (state: { center: google.maps.LatLngLiteral | null; zoom: number | null }) => void;
 }
 
 export default function MapView({
@@ -44,6 +46,8 @@ export default function MapView({
   hoveredIndex,
   selectedIndex,
   onSelect,
+  mapState,
+  onMapStateChange,
 }: Props) {
   const mapRef = useRef<HTMLDivElement>(null);
   const gmap = useRef<google.maps.Map | null>(null);
@@ -71,14 +75,18 @@ export default function MapView({
     function init() {
       if (!window.google || !mapRef.current || gmap.current) return;
       gmap.current = new window.google.maps.Map(mapRef.current, {
-        center: { lat: -25.2744, lng: 133.7751 },
-        zoom: 5,
+        center: mapState?.center ?? { lat: -25.2744, lng: 133.7751 },
+        zoom: mapState?.zoom ?? 5,
       });
       renderer.current = new window.google.maps.DirectionsRenderer();
       renderer.current!.setMap(gmap.current);
       gmap.current!.addListener('idle', () => {
         zoomRef.current = gmap.current?.getZoom() ?? null;
         centerRef.current = gmap.current?.getCenter() ?? null;
+        onMapStateChange?.({
+          center: gmap.current?.getCenter()?.toJSON() ?? null,
+          zoom: gmap.current?.getZoom() ?? null,
+        });
       });
     }
     init();
@@ -89,20 +97,26 @@ export default function MapView({
     if (!gmap.current) {
       if (mapRef.current) {
         gmap.current = new window.google.maps.Map(mapRef.current, {
-          center: { lat: -25.2744, lng: 133.7751 },
-          zoom: 5,
+          center: mapState?.center ?? { lat: -25.2744, lng: 133.7751 },
+          zoom: mapState?.zoom ?? 5,
         });
         gmap.current!.addListener('idle', () => {
           zoomRef.current = gmap.current?.getZoom() ?? null;
           centerRef.current = gmap.current?.getCenter() ?? null;
+          onMapStateChange?.({
+            center: gmap.current?.getCenter()?.toJSON() ?? null,
+            zoom: gmap.current?.getZoom() ?? null,
+          });
         });
       } else {
         return;
       }
     }
     const geocoder = new window.google.maps.Geocoder();
-    const zoom = zoomRef.current ?? gmap.current!.getZoom();
-    const center = centerRef.current ?? gmap.current!.getCenter();
+    const zoom = mapState?.zoom ?? zoomRef.current ?? gmap.current!.getZoom();
+    const center = mapState?.center
+      ? new window.google.maps.LatLng(mapState.center)
+      : centerRef.current ?? gmap.current!.getCenter();
     const hadMarkers = markers.current.length > 0;
     markers.current.forEach((m) => m.setMap(null));
     markers.current = [];
@@ -172,8 +186,10 @@ export default function MapView({
 
   useEffect(() => {
     if (!isLoaded || !renderer.current) return;
-    const zoom = zoomRef.current ?? gmap.current?.getZoom();
-    const center = centerRef.current ?? gmap.current?.getCenter();
+    const zoom = mapState?.zoom ?? zoomRef.current ?? gmap.current?.getZoom();
+    const center = mapState?.center
+      ? new window.google.maps.LatLng(mapState.center)
+      : centerRef.current ?? gmap.current?.getCenter();
     if (directions) {
       renderer.current.setDirections(directions);
     } else {
@@ -184,6 +200,17 @@ export default function MapView({
       gmap.current?.setZoom(zoom);
     }
   }, [directions, isLoaded]);
+
+  useEffect(() => {
+    return () => {
+      if (gmap.current) {
+        onMapStateChange?.({
+          center: gmap.current.getCenter()?.toJSON() ?? null,
+          zoom: gmap.current.getZoom() ?? null,
+        });
+      }
+    };
+  }, [onMapStateChange]);
 
   return (
     <div
