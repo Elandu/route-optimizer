@@ -23,6 +23,7 @@ interface Stop {
   day?: number;
   isAccom?: boolean;
   isStart?: boolean;
+  travelNext?: string;
 }
 
 declare global {
@@ -141,6 +142,7 @@ const remove = (id: string) => {
         etdIso: current.toISO() ?? undefined,
         day,
         isStart: true,
+        travelNext: legs[0]?.duration?.text,
       });
 
       currStops.forEach((stop, idx) => {
@@ -158,6 +160,7 @@ const remove = (id: string) => {
           etaIso: eta.toISO() ?? undefined,
           etdIso: etd.toISO() ?? undefined,
           day,
+          travelNext: legs[idx + 1]?.duration?.text,
         });
 
         if (etd > dayEnd) {
@@ -199,6 +202,7 @@ const remove = (id: string) => {
         etdIso: current.toISO() ?? undefined,
         day,
         isStart: true,
+        travelNext: undefined,
       });
 
       const avg = currStops.length ? travel / currStops.length : 0;
@@ -316,7 +320,7 @@ const remove = (id: string) => {
     <div className="flex flex-col w-full min-h-screen md:w-screen md:h-screen">
       <AuthHeader />
       <main className="flex flex-col lg:flex-row h-screen w-full overflow-hidden">
-        <div className="flex flex-col w-full lg:w-1/2 p-4 overflow-y-auto">
+        <div className="flex flex-col w-full lg:w-[40%] p-4 overflow-y-auto flex-grow">
           <Tabs
             defaultKey="run"
             items={[
@@ -344,6 +348,13 @@ const remove = (id: string) => {
                         value={startTime}
                         onChange={(e) => setStartTime(e.target.value)}
                         className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full md:w-auto"
+                      />
+                      <input
+                        type="time"
+                        value={eodTime}
+                        onChange={(e) => setEodTime(e.target.value)}
+                        className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full md:w-auto"
+                        aria-label="End of Day Time"
                       />
                       <button
                         onClick={saveStart}
@@ -377,15 +388,6 @@ const remove = (id: string) => {
                 title: 'Settings',
                 content: (
                   <div className="flex flex-col gap-2">
-                    <label className="flex flex-col text-xs">
-                      <span>End of Day Time (EOD)</span>
-                      <input
-                        type="time"
-                        value={eodTime}
-                        onChange={(e) => setEodTime(e.target.value)}
-                        className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full md:w-auto"
-                      />
-                    </label>
                     <label className="flex items-center">
                       <input
                         type="checkbox"
@@ -436,7 +438,7 @@ const remove = (id: string) => {
             {stops.length > 0 && <ShareModal url={shareUrl} onShare={generateShare} />}
           </div>
         </div>
-        <div className="w-full lg:w-1/2 p-4">
+        <div className="w-full lg:w-[60%] h-full flex-grow overflow-hidden">
           <MapView start={startAddress} stops={timedStops} directions={directions} />
         </div>
       </main>

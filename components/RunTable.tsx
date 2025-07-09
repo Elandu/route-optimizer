@@ -1,6 +1,11 @@
 'use client';
 import StopRow, { Stop } from './StopRow';
 
+function indexToLabel(i: number) {
+  if (i === 0) return '0';
+  return String.fromCharCode('A'.charCodeAt(0) + i - 1);
+}
+
 interface Props {
   stops: Stop[];
   draggingId: string | null;
@@ -16,10 +21,12 @@ export default function RunTable({ stops, draggingId, remove, onDragStart, onDro
       <thead className="bg-gray-100 dark:bg-gray-800">
         <tr className="text-left text-xs uppercase tracking-wider">
           <th className="p-2"></th>
+          <th className="p-2 text-center">#</th>
           <th className="p-2 text-left">Stop</th>
           <th className="p-2 text-left">Time (min)</th>
           <th className="p-2 text-left">ETA</th>
           <th className="p-2 text-left">ETD</th>
+          <th className="p-2 text-left">Travel Time to Next</th>
           <th className="p-2 text-red-500">✖</th>
         </tr>
       </thead>
@@ -30,7 +37,7 @@ export default function RunTable({ stops, draggingId, remove, onDragStart, onDro
             <>
               {showDay && (
                 <tr className="bg-gray-100 dark:bg-gray-800 font-bold">
-                  <td className="p-2" colSpan={6}>{`Day ${s.day}`}</td>
+                  <td className="p-2" colSpan={8}>{`Day ${s.day}`}</td>
                 </tr>
               )}
               <StopRow
@@ -41,6 +48,8 @@ export default function RunTable({ stops, draggingId, remove, onDragStart, onDro
                 onDragStart={() => onDragStart(s.id)}
                 onDrop={() => onDrop(s.id)}
                 onTimeChange={(t) => onTimeChange(s.id, t)}
+                label={indexToLabel(idx)}
+                travelNext={s.travelNext}
               />
             </>
           );
