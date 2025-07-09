@@ -311,10 +311,10 @@ const remove = (id: string) => {
   };
 
   return (
-    <div>
+    <div className="flex flex-col w-full min-h-screen md:w-screen md:h-screen">
       <AuthHeader />
-      <main className="p-4 w-full max-w-5xl mx-auto grid gap-4 md:grid-cols-2 md:grid-rows-2 min-h-screen">
-        <section className="p-4 border rounded shadow-sm overflow-auto">
+      <main className="flex-grow p-4 w-full max-w-5xl md:max-w-none mx-auto grid gap-4 md:grid-cols-2 md:grid-rows-2">
+        <section className="p-4 border rounded shadow-sm flex flex-col overflow-auto">
           <div className="flex flex-wrap md:flex-nowrap gap-2 mb-2 items-end">
           <AddressInput
             value={startAddress}
@@ -387,10 +387,10 @@ const remove = (id: string) => {
             />
           </div>
         </section>
-        <section className="p-4 border rounded shadow-sm overflow-auto">
+        <section className="p-4 border rounded shadow-sm flex flex-col overflow-auto">
           <MapView start={startAddress} stops={timedStops} directions={directions} />
         </section>
-        <section className="p-4 border rounded shadow-sm overflow-x-auto">
+        <section className="p-4 border rounded shadow-sm flex flex-col overflow-auto">
           <RunTable
           stops={stopsWithTimes}
           draggingId={dragging}
