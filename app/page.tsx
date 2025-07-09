@@ -51,6 +51,9 @@ export default function Page() {
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [isOvernight, setIsOvernight] = useState(false);
   const [accomodation, setAccomodation] = useState('');
+  const [avoidTolls, setAvoidTolls] = useState(false);
+  const [maxStopsPerDay, setMaxStopsPerDay] = useState(5);
+  const [defaultServiceTime, setDefaultServiceTime] = useState(60);
   const [stats, setStats] = useState<{travel:number; avg:number; stops:number; days:number} | null>(null);
   const [shouldRecalc, setShouldRecalc] = useState(false);
   const stopsCountRef = useRef(0);
@@ -282,7 +285,7 @@ const remove = (id: string) => {
       alert('Please provide an address first');
       return;
     }
-    const baseStops = addrs.map(addr => ({ id: Date.now().toString() + Math.random(), address: addr, time: 60 }));
+    const baseStops = addrs.map(addr => ({ id: Date.now().toString() + Math.random(), address: addr, time: defaultServiceTime }));
     setStops(baseStops);
     if (!window.google) return;
     const svc = new window.google.maps.DirectionsService();
@@ -373,8 +376,8 @@ const remove = (id: string) => {
 
   const runContent = (
     <div className="flex flex-col h-full">
-      <div className="flex flex-col gap-4 p-4 max-h-[50vh] overflow-y-auto border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700">
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-4 p-4 max-h-[50vh] overflow-y-auto scroll-touch border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <div className="flex flex-col w-full">
             <label htmlFor="start-address" className="mb-1">Start Address</label>
             <AddressInput
@@ -391,27 +394,7 @@ const remove = (id: string) => {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full sm:w-1/2 md:w-1/3">
-            <label htmlFor="start-time" className="mb-1">Start Time</label>
-            <input
-              id="start-time"
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full"
-            />
-          </div>
-          <div className="flex flex-col w-full sm:w-1/2 md:w-1/3">
-            <label htmlFor="end-time" className="mb-1">End Time</label>
-            <input
-              id="end-time"
-              type="time"
-              value={eodTime}
-              onChange={(e) => setEodTime(e.target.value)}
-              className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full"
+              className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full box-border appearance-none"
             />
           </div>
         </div>
@@ -429,12 +412,12 @@ const remove = (id: string) => {
             value={bulkAddresses}
             onChange={(e) => updateBulkAddresses(e.target.value)}
             placeholder="One address per line"
-            className="border px-3 py-2 rounded w-full h-40 dark:bg-gray-800 dark:text-white"
+            className="border px-3 py-2 rounded w-full h-40 box-border appearance-none dark:bg-gray-800 dark:text-white"
           />
         </div>
       </div>
       <div
-        className={`flex flex-col ${isDesktop ? 'flex-grow' : ''} overflow-y-auto p-4 ${!isDesktop ? 'max-h-[80vh] scroll-mt-24' : ''}`}
+        className={`flex flex-col flex-1 overflow-y-auto scroll-touch p-4 ${!isDesktop ? 'max-h-[80vh] scroll-mt-24' : ''}`}
       >
         {tableContent}
       </div>
@@ -442,20 +425,79 @@ const remove = (id: string) => {
   );
 
   const settingsContent = (
-    <div className="p-4 flex flex-col gap-2">
-      <label className="flex items-center">
+    <div className="flex flex-col overflow-y-auto scroll-touch flex-1 px-4 md:px-8 py-4 gap-2">
+      <h3 className="text-md font-semibold text-gray-300 mb-2">Schedule</h3>
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
+          <label htmlFor="start-time" className="mb-1">Start Time</label>
+          <input
+            id="start-time"
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="end-time" className="mb-1">End Time</label>
+          <input
+            id="end-time"
+            type="time"
+            value={eodTime}
+            onChange={(e) => setEodTime(e.target.value)}
+            className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
+          />
+        </div>
+        <label className="flex items-center">
+          <input
+            id="overnight"
+            type="checkbox"
+            checked={isOvernight}
+            onChange={(e) => setIsOvernight(e.target.checked)}
+            className="mr-2"
+          />
+          Overnight stop
+        </label>
+        {isOvernight && (
+          <AddressInput id="accom" value={accomodation} onChange={setAccomodation} placeholder="Accomodation address" />
+        )}
+      </div>
+
+      <h3 className="text-md font-semibold text-gray-300 mt-4 mb-2">Route Options</h3>
+      <div className="flex flex-col gap-2">
+        <label className="flex items-center">
+          <input
+            id="avoid-tolls"
+            type="checkbox"
+            checked={avoidTolls}
+            onChange={(e) => setAvoidTolls(e.target.checked)}
+            className="mr-2"
+          />
+          Avoid Tolls
+        </label>
+        <div className="flex flex-col">
+          <label htmlFor="max-stops" className="mb-1">Max Stops per Day</label>
+          <input
+            id="max-stops"
+            type="number"
+            value={maxStopsPerDay}
+            onChange={(e) => setMaxStopsPerDay(parseInt(e.target.value) || 0)}
+            className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
+          />
+        </div>
+      </div>
+
+      <h3 className="text-md font-semibold text-gray-300 mt-4 mb-2">Defaults</h3>
+      <div className="flex flex-col gap-2">
+        <label htmlFor="default-service" className="mb-1">Default Service Time (mins)</label>
         <input
-          id="overnight"
-          type="checkbox"
-          checked={isOvernight}
-          onChange={(e) => setIsOvernight(e.target.checked)}
-          className="mr-2"
+          id="default-service"
+          type="number"
+          value={defaultServiceTime}
+          onChange={(e) => setDefaultServiceTime(parseInt(e.target.value) || 0)}
+          className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
         />
-        Overnight stop
-      </label>
-      {isOvernight && (
-        <AddressInput id="accom" value={accomodation} onChange={setAccomodation} placeholder="Accomodation address" />
-      )}
+      </div>
     </div>
   );
 

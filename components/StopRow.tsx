@@ -90,7 +90,7 @@ export default function StopRow({
             value={stop.time}
             onChange={(e) => onTimeChange(parseInt(e.target.value) || 0)}
             readOnly={stop.isAccom}
-            className="border px-3 py-2 rounded w-16 dark:bg-gray-800 dark:text-white disabled:bg-gray-200"
+            className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white disabled:bg-gray-200"
           />
         )}
       </td>
