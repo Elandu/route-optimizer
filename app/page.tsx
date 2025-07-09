@@ -34,6 +34,7 @@ export default function Page() {
   const [startAddress, setStartAddress] = useState('');
   const [startDate, setStartDate] = useState(DateTime.now().toISODate());
   const [startTime, setStartTime] = useState('08:30');
+  const [eodTime, setEodTime] = useState('17:00');
   const [address, setAddress] = useState('');
   const [bulkAddresses, setBulkAddresses] = useState('');
   // user provided stops (without start/end or accom rows)
@@ -121,10 +122,12 @@ const remove = (id: string) => {
   const applyTimes = useCallback(
     (currStops: Stop[], legs: google.maps.DirectionsLeg[]) => {
       let current = DateTime.fromISO(`${startDate}T${startTime}`);
+      const [eodHour, eodMinute] = eodTime.split(':').map((n) => parseInt(n, 10));
+      const [startHour, startMinute] = startTime.split(':').map((n) => parseInt(n, 10));
       let day = 1;
       let travel = 0;
       const result: Stop[] = [];
-      let dayEnd = current.set({ hour: 17, minute: 30 });
+      let dayEnd = current.set({ hour: eodHour, minute: eodMinute });
 
       result.push({
         id: 'start',
@@ -157,7 +160,7 @@ const remove = (id: string) => {
 
         if (etd > dayEnd) {
           const overEta = etd;
-          const nextStart = overEta.plus({ days: 1 }).set({ hour: 8, minute: 30 });
+          const nextStart = overEta.plus({ days: 1 }).set({ hour: startHour, minute: startMinute });
           if (isOvernight && accomodation.trim()) {
             result.push({
               id: `accom-${day}`,
@@ -173,7 +176,7 @@ const remove = (id: string) => {
           }
           day++;
           current = nextStart;
-          dayEnd = current.set({ hour: 17, minute: 30 });
+          dayEnd = current.set({ hour: eodHour, minute: eodMinute });
         }
       });
 
@@ -215,7 +218,7 @@ const remove = (id: string) => {
           )
       );
     },
-    [startAddress, startDate, startTime, accomodation, isOvernight]
+    [startAddress, startDate, startTime, eodTime, accomodation, isOvernight]
   );
 
   const recalcRoute = useCallback((currStops: Stop[]) => {
@@ -252,7 +255,7 @@ const remove = (id: string) => {
 
   useEffect(() => {
     if (stopsCountRef.current > 0) setShouldRecalc(true);
-  }, [isOvernight, accomodation]);
+  }, [isOvernight, accomodation, eodTime]);
 
   const generateRoute = () => {
     const addrs = cleanLines(bulkAddresses);
@@ -310,8 +313,9 @@ const remove = (id: string) => {
   return (
     <div>
       <AuthHeader />
-      <main className="p-4 max-w-2xl mx-auto">
-        <div className="flex gap-2 mb-2">
+      <main className="p-4 max-w-5xl mx-auto grid md:grid-cols-2 md:grid-rows-2 gap-4">
+        <section className="p-4 border rounded shadow-sm">
+          <div className="flex gap-2 mb-2">
           <AddressInput
             value={startAddress}
             onChange={setStartAddress}
@@ -331,14 +335,23 @@ const remove = (id: string) => {
             onChange={(e) => setStartTime(e.target.value)}
             className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
           />
+          <label className="flex flex-col text-xs">
+            <span>End of Day Time (EOD)</span>
+            <input
+              type="time"
+              value={eodTime}
+              onChange={(e) => setEodTime(e.target.value)}
+              className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
+            />
+          </label>
           <button
             onClick={saveStart}
             className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
           >
             Save
           </button>
-        </div>
-        <div className="flex gap-2 items-center mb-2">
+          </div>
+          <div className="flex gap-2 items-center mb-2">
           <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
           <button
             onClick={addAddressLine}
@@ -346,35 +359,39 @@ const remove = (id: string) => {
           >
             Add
           </button>
-        </div>
-        <div className="flex items-center gap-2 mb-2">
-          <label>
-            <input
-              type="checkbox"
-              checked={isOvernight}
-              onChange={(e) => setIsOvernight(e.target.checked)}
-              className="mr-1"
+          </div>
+          <div className="flex items-center gap-2 mb-2">
+            <label>
+              <input
+                type="checkbox"
+                checked={isOvernight}
+                onChange={(e) => setIsOvernight(e.target.checked)}
+                className="mr-1"
+              />
+              Overnight
+            </label>
+            {isOvernight && (
+              <AddressInput
+                value={accomodation}
+                onChange={setAccomodation}
+                placeholder="Accomodation address"
+              />
+            )}
+          </div>
+          <div className="mb-2">
+            <textarea
+              value={bulkAddresses}
+              onChange={(e) => updateBulkAddresses(e.target.value)}
+              placeholder="One address per line"
+              className="border px-3 py-2 rounded w-full h-40 dark:bg-gray-800 dark:text-white"
             />
-            Overnight
-          </label>
-          {isOvernight && (
-            <AddressInput
-              value={accomodation}
-              onChange={setAccomodation}
-              placeholder="Accomodation address"
-            />
-          )}
-        </div>
-        <div className="mb-2">
-          <textarea
-            value={bulkAddresses}
-            onChange={(e) => updateBulkAddresses(e.target.value)}
-            placeholder="One address per line"
-            className="border px-3 py-2 rounded w-full h-40 dark:bg-gray-800 dark:text-white"
-          />
-        </div>
-        <MapView start={startAddress} stops={timedStops} directions={directions} />
-        <RunTable
+          </div>
+        </section>
+        <section className="p-4 border rounded shadow-sm">
+          <MapView start={startAddress} stops={timedStops} directions={directions} />
+        </section>
+        <section className="p-4 border rounded shadow-sm">
+          <RunTable
           stops={stopsWithTimes}
           draggingId={dragging}
           remove={remove}
@@ -390,10 +407,11 @@ const remove = (id: string) => {
             <br />
             {`Total stops: ${stats.stops}`}
             <br />
-            {`Number of days: ${stats.days}`}
+          {`Number of days: ${stats.days}`}
           </div>
         )}
-        <div className="mt-4 flex gap-2">
+        </section>
+        <section className="p-4 border rounded shadow-sm flex flex-col gap-2">
           <button
             onClick={generateRoute}
             className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
@@ -401,7 +419,7 @@ const remove = (id: string) => {
             Generate Run
           </button>
           {stops.length > 0 && <ShareModal url={shareUrl} onShare={generateShare} />}
-        </div>
+        </section>
       </main>
       <Script src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&language=en-AU&region=AU`} />
       <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
