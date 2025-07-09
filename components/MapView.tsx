@@ -1,10 +1,11 @@
 'use client';
 import { useEffect, useRef, useMemo } from 'react';
+import { useLoadScript } from '@react-google-maps/api';
 
 function getDefaultMarkerIcon(): google.maps.Icon | undefined {
   if (typeof window !== 'undefined' && window.google?.maps) {
     return {
-      url: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2_hdpi.png',
+      url: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2.png',
       scaledSize: new window.google.maps.Size(27, 43),
     };
   }
@@ -14,7 +15,7 @@ function getDefaultMarkerIcon(): google.maps.Icon | undefined {
 function getHighlightedMarkerIcon(): google.maps.Icon | undefined {
   if (typeof window !== 'undefined' && window.google?.maps) {
     return {
-      url: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2_hdpi.png',
+      url: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2.png',
       scaledSize: new window.google.maps.Size(32, 51),
     };
   }
@@ -52,6 +53,12 @@ export default function MapView({
   const centerRef = useRef<google.maps.LatLng | null>(null);
   const infoRef = useRef<google.maps.InfoWindow | null>(null);
 
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries: ['places'],
+  });
+
+
   const defaultIcon = useMemo(getDefaultMarkerIcon, []);
   const highlightedIcon = useMemo(getHighlightedMarkerIcon, []);
 
@@ -60,6 +67,7 @@ export default function MapView({
   };
 
   useEffect(() => {
+    if (!isLoaded || !window.google) return;
     function init() {
       if (!window.google || !mapRef.current || gmap.current) return;
       gmap.current = new window.google.maps.Map(mapRef.current, {
@@ -73,21 +81,11 @@ export default function MapView({
         centerRef.current = gmap.current?.getCenter() ?? null;
       });
     }
-    if (window.google) {
-      init();
-    } else {
-      const interval = setInterval(() => {
-        if (window.google) {
-          init();
-          clearInterval(interval);
-        }
-      }, 500);
-      return () => clearInterval(interval);
-    }
-  }, []);
+    init();
+  }, [isLoaded]);
 
   useEffect(() => {
-    if (!window.google) return;
+    if (!isLoaded || !window.google) return;
     if (!gmap.current) {
       if (mapRef.current) {
         gmap.current = new window.google.maps.Map(mapRef.current, {
@@ -140,9 +138,10 @@ export default function MapView({
       gmap.current!.setCenter(center);
       gmap.current!.setZoom(zoom);
     }
-  }, [start, stops, defaultIcon, onSelect]);
+  }, [start, stops, defaultIcon, onSelect, isLoaded]);
 
   useEffect(() => {
+    if (!isLoaded || !window.google) return;
     const rowToMarkerIndex = (row: number | null | undefined) => {
       if (row == null) return null;
       let count = 0;
@@ -169,10 +168,10 @@ export default function MapView({
     } else {
       infoRef.current!.close();
     }
-  }, [hoveredIndex, selectedIndex, stops, defaultIcon, highlightedIcon]);
+  }, [hoveredIndex, selectedIndex, stops, defaultIcon, highlightedIcon, isLoaded]);
 
   useEffect(() => {
-    if (!renderer.current) return;
+    if (!isLoaded || !renderer.current) return;
     const zoom = zoomRef.current ?? gmap.current?.getZoom();
     const center = centerRef.current ?? gmap.current?.getCenter();
     if (directions) {
@@ -184,7 +183,7 @@ export default function MapView({
       gmap.current?.setCenter(center);
       gmap.current?.setZoom(zoom);
     }
-  }, [directions]);
+  }, [directions, isLoaded]);
 
   return (
     <div
