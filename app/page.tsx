@@ -6,6 +6,7 @@ import ShareModal from '../components/ShareModal';
 import AuthHeader from '../components/AuthHeader';
 import MapView from '../components/MapView';
 import Tabs, { TabItem } from '../components/Tabs';
+import AddAddressesModal from '../components/AddAddressesModal';
 import useMediaQuery from '../lib/useMediaQuery';
 import { encrypt } from '../lib/encryption';
 import { addMinutes, formatTime, parseTime } from '../lib/time';
@@ -58,6 +59,15 @@ export default function Page() {
   const [shouldRecalc, setShouldRecalc] = useState(false);
   const stopsCountRef = useRef(0);
   const [currentTab, setCurrentTab] = useState('run');
+  const [tableHeight, setTableHeight] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = Number(localStorage.getItem('tableHeight'));
+      return saved || 300;
+    }
+    return 300;
+  });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [mapState, setMapState] = useState<{center: google.maps.LatLngLiteral | null; zoom: number | null}>({ center: null, zoom: null });
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const isMapVisible = isDesktop || currentTab === 'map';
@@ -77,6 +87,12 @@ export default function Page() {
     }
     setBulkAddresses(lines.slice(0, MAX_STOPS).join('\n'));
   };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tableHeight', String(tableHeight));
+    }
+  }, [tableHeight]);
 
   useEffect(() => {
     stopsCountRef.current = stops.length;
@@ -102,6 +118,34 @@ export default function Page() {
     const newline = bulkAddresses ? `\n${address}` : address;
     updateBulkAddresses(bulkAddresses + newline);
     setAddress('');
+  };
+
+  const startResize = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const startHeight = tableHeight;
+    const move = (ev: any) => {
+      const y = 'touches' in ev ? ev.touches[0].clientY : ev.clientY;
+      const delta = y - startY;
+      const container = containerRef.current;
+      if (!container) return;
+      const max = container.clientHeight - 100;
+      const min = 100;
+      let newHeight = startHeight - delta;
+      if (newHeight < min) newHeight = min;
+      if (newHeight > max) newHeight = max;
+      setTableHeight(newHeight);
+    };
+    const stop = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', stop);
+      document.removeEventListener('touchmove', move);
+      document.removeEventListener('touchend', stop);
+    };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', stop);
+    document.addEventListener('touchmove', move);
+    document.addEventListener('touchend', stop);
   };
 
   const onDragStart = (id: string) => setDragging(id);
@@ -375,8 +419,11 @@ const remove = (id: string) => {
   );
 
   const runContent = (
-    <div className="flex flex-col h-full">
-      <div className="flex flex-col gap-4 p-4 max-h-[50vh] overflow-y-auto scroll-touch border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700">
+    <div ref={containerRef} className="flex flex-col h-full">
+      <div
+        className="flex flex-col gap-4 p-4 overflow-y-auto scroll-touch border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700"
+        style={{ height: tableHeight }}
+      >
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <div className="flex flex-col w-full">
             <label htmlFor="start-address" className="mb-1">Start Address</label>
@@ -387,19 +434,9 @@ const remove = (id: string) => {
               placeholder="Start address"
             />
           </div>
-          <div className="flex flex-col w-full sm:w-1/2 md:w-1/3">
-            <label htmlFor="start-date" className="mb-1">Date</label>
-            <input
-              id="start-date"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full box-border appearance-none"
-            />
-          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          <div className="flex gap-2">
+          <div className="flex gap-2 hidden md:flex">
             <AddressInput id="add-address" value={address} onChange={setAddress} placeholder="Add address" />
             <button
               onClick={addAddressLine}
@@ -412,13 +449,22 @@ const remove = (id: string) => {
             value={bulkAddresses}
             onChange={(e) => updateBulkAddresses(e.target.value)}
             placeholder="One address per line"
-            className="border px-3 py-2 rounded w-full h-40 box-border appearance-none dark:bg-gray-800 dark:text-white"
+            className="hidden md:block border px-3 py-2 rounded w-full h-40 box-border appearance-none dark:bg-gray-800 dark:text-white"
           />
+          <button
+            onClick={() => setEditOpen(true)}
+            className="block md:hidden px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
+          >
+            Edit Stops
+          </button>
         </div>
       </div>
       <div
-        className={`flex flex-col flex-1 overflow-y-auto scroll-touch p-4 ${!isDesktop ? 'max-h-[80vh] scroll-mt-24' : ''}`}
-      >
+        onMouseDown={startResize}
+        onTouchStart={startResize}
+        className="h-2 bg-gray-600 cursor-row-resize"
+      />
+      <div className="flex-1 overflow-auto scroll-touch p-4">
         {tableContent}
       </div>
     </div>
@@ -428,6 +474,16 @@ const remove = (id: string) => {
     <div className="flex flex-col overflow-y-auto scroll-touch flex-1 px-4 md:px-8 py-4 gap-2">
       <h3 className="text-md font-semibold text-gray-300 mb-2">Schedule</h3>
       <div className="flex flex-col gap-2">
+        <div className="flex flex-col">
+          <label htmlFor="start-date" className="mb-1">Date</label>
+          <input
+            id="start-date"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
+          />
+        </div>
         <div className="flex flex-col">
           <label htmlFor="start-time" className="mb-1">Start Time</label>
           <input
@@ -540,6 +596,15 @@ const remove = (id: string) => {
         )}
       </div>
       <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
+      <AddAddressesModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        address={address}
+        onAddressChange={setAddress}
+        addAddressLine={addAddressLine}
+        bulk={bulkAddresses}
+        onBulkChange={updateBulkAddresses}
+      />
     </div>
   );
 }
