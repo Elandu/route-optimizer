@@ -8,9 +8,10 @@ type Props = {
   placeholder?: string;
   title?: string;
   ariaLabel?: string;
+  id?: string;
 };
 
-export default function AddressInput({ value, onChange, placeholder, title, ariaLabel }: Props) {
+export default function AddressInput({ value, onChange, placeholder, title, ariaLabel, id }: Props) {
   const ref = useRef<HTMLInputElement>(null);
   const { inputProps } = useTextField(
     {
@@ -49,6 +50,7 @@ export default function AddressInput({ value, onChange, placeholder, title, aria
   return (
     <input
       {...inputProps}
+      id={id}
       ref={ref}
       title={title}
       className="border px-3 py-2 rounded w-full dark:bg-gray-800 dark:text-white"

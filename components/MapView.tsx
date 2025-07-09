@@ -1,10 +1,11 @@
 'use client';
 import { useEffect, useRef, useMemo } from 'react';
+import { useLoadScript } from '@react-google-maps/api';
 
 function getDefaultMarkerIcon(): google.maps.Icon | undefined {
   if (typeof window !== 'undefined' && window.google?.maps) {
     return {
-      url: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2_hdpi.png',
+      url: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2.png',
       scaledSize: new window.google.maps.Size(27, 43),
     };
   }
@@ -14,7 +15,7 @@ function getDefaultMarkerIcon(): google.maps.Icon | undefined {
 function getHighlightedMarkerIcon(): google.maps.Icon | undefined {
   if (typeof window !== 'undefined' && window.google?.maps) {
     return {
-      url: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2_hdpi.png',
+      url: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2.png',
       scaledSize: new window.google.maps.Size(32, 51),
     };
   }
@@ -48,6 +49,15 @@ export default function MapView({
   const gmap = useRef<google.maps.Map | null>(null);
   const markers = useRef<google.maps.Marker[]>([]);
   const renderer = useRef<google.maps.DirectionsRenderer | null>(null);
+  const zoomRef = useRef<number | null>(null);
+  const centerRef = useRef<google.maps.LatLng | null>(null);
+  const infoRef = useRef<google.maps.InfoWindow | null>(null);
+
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries: ['places'],
+  });
+
 
   const defaultIcon = useMemo(getDefaultMarkerIcon, []);
   const highlightedIcon = useMemo(getHighlightedMarkerIcon, []);
@@ -57,6 +67,7 @@ export default function MapView({
   };
 
   useEffect(() => {
+    if (!isLoaded || !window.google) return;
     function init() {
       if (!window.google || !mapRef.current || gmap.current) return;
       gmap.current = new window.google.maps.Map(mapRef.current, {
@@ -65,35 +76,33 @@ export default function MapView({
       });
       renderer.current = new window.google.maps.DirectionsRenderer();
       renderer.current!.setMap(gmap.current);
+      gmap.current!.addListener('idle', () => {
+        zoomRef.current = gmap.current?.getZoom() ?? null;
+        centerRef.current = gmap.current?.getCenter() ?? null;
+      });
     }
-    if (window.google) {
-      init();
-    } else {
-      const interval = setInterval(() => {
-        if (window.google) {
-          init();
-          clearInterval(interval);
-        }
-      }, 500);
-      return () => clearInterval(interval);
-    }
-  }, []);
+    init();
+  }, [isLoaded]);
 
   useEffect(() => {
-    if (!window.google) return;
+    if (!isLoaded || !window.google) return;
     if (!gmap.current) {
       if (mapRef.current) {
         gmap.current = new window.google.maps.Map(mapRef.current, {
           center: { lat: -25.2744, lng: 133.7751 },
           zoom: 5,
         });
+        gmap.current!.addListener('idle', () => {
+          zoomRef.current = gmap.current?.getZoom() ?? null;
+          centerRef.current = gmap.current?.getCenter() ?? null;
+        });
       } else {
         return;
       }
     }
     const geocoder = new window.google.maps.Geocoder();
-    const zoom = gmap.current!.getZoom();
-    const center = gmap.current!.getCenter();
+    const zoom = zoomRef.current ?? gmap.current!.getZoom();
+    const center = centerRef.current ?? gmap.current!.getCenter();
     const hadMarkers = markers.current.length > 0;
     markers.current.forEach((m) => m.setMap(null));
     markers.current = [];
@@ -125,13 +134,14 @@ export default function MapView({
         }
       });
     });
-    if (hadMarkers && center && zoom) {
+    if (center && zoom != null) {
       gmap.current!.setCenter(center);
       gmap.current!.setZoom(zoom);
     }
-  }, [start, stops, defaultIcon, onSelect]);
+  }, [start, stops, defaultIcon, onSelect, isLoaded]);
 
   useEffect(() => {
+    if (!isLoaded || !window.google) return;
     const rowToMarkerIndex = (row: number | null | undefined) => {
       if (row == null) return null;
       let count = 0;
@@ -147,28 +157,33 @@ export default function MapView({
       m.setIcon(highlight ? highlightedIcon : defaultIcon);
       m.setZIndex(highlight ? 999 : i);
     });
+    if (!infoRef.current) infoRef.current = new window.google.maps.InfoWindow();
     if (sIdx != null) {
       const pos = markers.current[sIdx]?.getPosition();
       if (pos) {
         gmap.current?.panTo(pos);
+        infoRef.current!.setContent(stops[selectedIndex!].address);
+        infoRef.current!.open({ map: gmap.current!, anchor: markers.current[sIdx] });
       }
+    } else {
+      infoRef.current!.close();
     }
-  }, [hoveredIndex, selectedIndex, stops, defaultIcon, highlightedIcon]);
+  }, [hoveredIndex, selectedIndex, stops, defaultIcon, highlightedIcon, isLoaded]);
 
   useEffect(() => {
-    if (!renderer.current) return;
-    const zoom = gmap.current?.getZoom();
-    const center = gmap.current?.getCenter();
+    if (!isLoaded || !renderer.current) return;
+    const zoom = zoomRef.current ?? gmap.current?.getZoom();
+    const center = centerRef.current ?? gmap.current?.getCenter();
     if (directions) {
       renderer.current.setDirections(directions);
     } else {
       renderer.current.set('directions', null);
     }
-    if (zoom && center) {
+    if (center && zoom != null) {
       gmap.current?.setCenter(center);
       gmap.current?.setZoom(zoom);
     }
-  }, [directions]);
+  }, [directions, isLoaded]);
 
   return (
     <div

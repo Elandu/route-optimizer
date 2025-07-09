@@ -1,7 +1,5 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import type { Key } from '@react-types/shared';
-import Tabs from '../components/Tabs';
 import AddressInput from '../components/AddressInput';
 import RunTable from '../components/RunTable';
 import ShareModal from '../components/ShareModal';
@@ -83,9 +81,10 @@ export default function Page() {
   }, []);
 
 
-  const saveStart = () => {
+  const updateStartAddress = (val: string) => {
+    setStartAddress(val);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('startAddress', startAddress);
+      localStorage.setItem('startAddress', val);
     }
   };
 
@@ -324,133 +323,99 @@ const remove = (id: string) => {
     setShareUrl(`${window.location.origin}?d=${encodeURIComponent(enc)}`);
   };
 
-  return (
-    <div className="flex flex-col w-full min-h-screen md:w-screen md:h-screen">
-      <AuthHeader />
-      <main className="flex flex-col lg:flex-row h-screen w-full overflow-hidden">
-        <div className="flex flex-col w-full lg:w-[40%] p-4 overflow-y-auto flex-grow">
-          <Tabs
-            defaultKey="run"
-            items={[
-              {
-                key: 'run',
-                title: 'Run',
-                content: (
-                  <>
-                    <div className="flex flex-wrap md:flex-nowrap gap-2 mb-2 items-end">
-                      <AddressInput
-                        value={startAddress}
-                        onChange={setStartAddress}
-                        placeholder="Start address"
-                        title="Starting Address"
-                        ariaLabel="Starting Address"
-                      />
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full md:w-auto"
-                      />
-                      <input
-                        type="time"
-                        value={startTime}
-                        onChange={(e) => setStartTime(e.target.value)}
-                        className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full md:w-auto"
-                      />
-                      <input
-                        type="time"
-                        value={eodTime}
-                        onChange={(e) => setEodTime(e.target.value)}
-                        className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full md:w-auto"
-                        aria-label="End of Day Time"
-                      />
-                      <button
-                        onClick={saveStart}
-                        className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
-                      >
-                        Save
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap md:flex-nowrap gap-2 items-center mb-2">
-                      <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
-                      <button
-                        onClick={addAddressLine}
-                        className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
-                      >
-                        Add
-                      </button>
-                    </div>
-                    <div className="mb-2">
-                      <textarea
-                        value={bulkAddresses}
-                        onChange={(e) => updateBulkAddresses(e.target.value)}
-                        placeholder="One address per line"
-                        className="border px-3 py-2 rounded w-full h-40 dark:bg-gray-800 dark:text-white"
-                      />
-                    </div>
-                  </>
-                ),
-              },
-              {
-                key: 'settings',
-                title: 'Settings',
-                content: (
-                  <div className="flex flex-col gap-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={isOvernight}
-                        onChange={(e) => setIsOvernight(e.target.checked)}
-                        className="mr-1"
-                      />
-                      Overnight
-                    </label>
-                    {isOvernight && (
-                      <AddressInput
-                        value={accomodation}
-                        onChange={setAccomodation}
-                        placeholder="Accomodation address"
-                      />
-                    )}
-                  </div>
-                ),
-              },
-            ]}
-          />
-          <div className="mt-auto w-full">
-            <RunTable
-              stops={stopsWithTimes}
-              draggingId={dragging}
-              remove={remove}
-              onDragStart={onDragStart}
-              onDrop={onDrop}
-              onTimeChange={changeTime}
-              hoveredIndex={hoveredIdx}
-              selectedIndex={selectedIdx}
-              onHover={onHoverRow}
-              onSelect={onSelectRow}
-            />
-            {stats && (
-              <div className="mt-2 text-sm">
-                {`Total travel time: ${stats.travel} mins`}
-                <br />
-                {`Average travel per stop: ${stats.avg} mins`}
-                <br />
-                {`Total stops: ${stats.stops}`}
-                <br />
-                {`Number of days: ${stats.days}`}
-              </div>
-            )}
-            <button
-              onClick={generateRoute}
-              className="w-full bg-blue-500 text-white py-2 rounded mt-4"
-            >
-              Generate Run
-            </button>
-            {stops.length > 0 && <ShareModal url={shareUrl} onShare={generateShare} />}
-          </div>
+  const tableContent = (
+    <>
+      <RunTable
+        stops={stopsWithTimes}
+        draggingId={dragging}
+        remove={remove}
+        onDragStart={onDragStart}
+        onDrop={onDrop}
+        onTimeChange={changeTime}
+        hoveredIndex={hoveredIdx}
+        selectedIndex={selectedIdx}
+        onHover={onHoverRow}
+        onSelect={onSelectRow}
+      />
+      {stats && (
+        <div className="mt-2 text-sm">
+          {`Total travel time: ${stats.travel} mins`}
+          <br />
+          {`Average travel per stop: ${stats.avg} mins`}
+          <br />
+          {`Total stops: ${stats.stops}`}
+          <br />
+          {`Number of days: ${stats.days}`}
         </div>
-        <div className="w-full lg:w-[60%] h-full flex-grow overflow-hidden">
+      )}
+      <button
+        onClick={generateRoute}
+        className="w-full bg-blue-500 text-white py-2 rounded mt-4"
+      >
+        Generate Run
+      </button>
+      {stops.length > 0 && <ShareModal url={shareUrl} onShare={generateShare} />}
+    </>
+  );
+
+  return (
+    <div className="flex flex-col w-full min-h-screen">
+      <AuthHeader />
+      <main className="flex flex-col lg:flex-row w-full h-full overflow-hidden">
+        <div className="flex flex-col lg:w-[40%] h-screen">
+          <div className="flex flex-col gap-4 p-4 h-[50%] lg:max-h-[50%] overflow-hidden">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col">
+                <label htmlFor="start-address" className="mb-1">Start Address</label>
+                <AddressInput id="start-address" value={startAddress} onChange={updateStartAddress} placeholder="Start address" />
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="start-date" className="mb-1">Date</label>
+                <input id="start-date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white" />
+              </div>
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex flex-col flex-1">
+                  <label htmlFor="start-time" className="mb-1">Start Time</label>
+                  <input id="start-time" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full" />
+                </div>
+                <div className="flex flex-col flex-1">
+                  <label htmlFor="end-time" className="mb-1">End Time</label>
+                  <input id="end-time" type="time" value={eodTime} onChange={(e) => setEodTime(e.target.value)} className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <AddressInput id="add-address" value={address} onChange={setAddress} placeholder="Add address" />
+                <button onClick={addAddressLine} className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600">Add</button>
+              </div>
+              <textarea value={bulkAddresses} onChange={(e) => updateBulkAddresses(e.target.value)} placeholder="One address per line" className="border px-3 py-2 rounded w-full h-40 dark:bg-gray-800 dark:text-white" />
+              <div className="flex flex-col gap-2">
+                <label className="flex items-center">
+                  <input
+                    id="overnight"
+                    type="checkbox"
+                    checked={isOvernight}
+                    onChange={(e) => setIsOvernight(e.target.checked)}
+                    className="mr-2"
+                  />
+                  Overnight
+                </label>
+                {isOvernight && (
+                  <AddressInput id="accom" value={accomodation} onChange={setAccomodation} placeholder="Accomodation address" />
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="hidden lg:flex flex-col flex-grow overflow-y-auto p-4">
+            {tableContent}
+          </div>
+          <details className="lg:hidden flex-grow overflow-y-auto">
+            <summary className="p-4 font-semibold bg-gray-200 dark:bg-gray-800 cursor-pointer">Stops</summary>
+            <div className="p-4 flex flex-col gap-2">
+              {tableContent}
+            </div>
+          </details>
+        </div>
+        <div className="lg:w-[60%] h-screen w-full overflow-hidden">
           <MapView
             start={startAddress}
             stops={timedStops}
@@ -461,7 +426,6 @@ const remove = (id: string) => {
           />
         </div>
       </main>
-      <Script src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&language=en-AU&region=AU`} />
       <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
     </div>
   );

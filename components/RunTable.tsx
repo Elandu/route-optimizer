@@ -31,27 +31,28 @@ export default function RunTable({
   onSelect,
 }: Props) {
   return (
-    <table className="min-w-max w-full text-sm border-collapse mt-4">
-      <thead>
-        <tr className="bg-gray-800 text-white font-semibold text-xs">
-          <th className="p-2 text-center">#</th>
-          <th className="p-2 text-left">Stop</th>
-          <th className="p-2 text-left">Time (min)</th>
-          <th className="p-2 text-left">ETA</th>
-          <th className="p-2 text-left">ETD</th>
-          <th className="p-2 text-left">Travel Time to Next</th>
-          <th className="p-2"></th>
-        </tr>
-      </thead>
-      <tbody>
-        {(() => {
-          let lbl = 0;
-          return stops.map((s, idx) => {
-            const showDay = idx === 0 || stops[idx - 1].day !== s.day;
-            return (
-              <>
-                {showDay && (
-                  <tr className="bg-gray-900 text-gray-400 uppercase tracking-wider text-xs">
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm border-collapse table-fixed">
+        <thead>
+          <tr className="bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold text-xs">
+            <th className="p-2 text-center">#</th>
+            <th className="p-2 text-left">Stop</th>
+            <th className="p-2 text-left">Time (min)</th>
+            <th className="p-2 text-left">ETA</th>
+            <th className="p-2 text-left">ETD</th>
+            <th className="p-2 text-left">Travel Time to Next</th>
+            <th className="p-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {(() => {
+            let lbl = 0;
+            return stops.map((s, idx) => {
+              const showDay = idx === 0 || stops[idx - 1].day !== s.day;
+              return (
+                <>
+                  {showDay && (
+                  <tr className="bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 uppercase tracking-wider text-xs">
                     <td className="p-2" colSpan={7}>{`Day ${s.day}`}</td>
                   </tr>
                 )}
@@ -74,7 +75,8 @@ export default function RunTable({
             );
           });
         })()}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
   );
 }
