@@ -4,6 +4,7 @@ import { useEffect, useRef, useMemo } from 'react';
 interface Stop {
   id: string;
   address: string;
+  isStart?: boolean;
 }
 
 interface Props {
@@ -28,7 +29,7 @@ export default function MapView({
   const markers = useRef<google.maps.Marker[]>([]);
   const renderer = useRef<google.maps.DirectionsRenderer | null>(null);
 
-  const defaultIcon = useMemo<google.maps.Icon>(
+  const defaultIcon = useMemo<google.maps.Symbol>(
     () => ({
       path: google.maps.SymbolPath.CIRCLE,
       scale: 8,
@@ -40,7 +41,7 @@ export default function MapView({
     []
   );
 
-  const highlightedIcon = useMemo<google.maps.Icon>(
+  const highlightedIcon = useMemo<google.maps.Symbol>(
     () => ({
       ...defaultIcon,
       scale: 12,
@@ -51,8 +52,7 @@ export default function MapView({
   );
 
   const indexToLabel = (i: number) => {
-    if (i === 0) return '0';
-    return String.fromCharCode('A'.charCodeAt(0) + i - 1);
+    return String.fromCharCode('A'.charCodeAt(0) + i);
   };
 
   useEffect(() => {
@@ -96,7 +96,10 @@ export default function MapView({
     const hadMarkers = markers.current.length > 0;
     markers.current.forEach((m) => m.setMap(null));
     markers.current = [];
-    const all = [start, ...stops.map((s) => s.address)].filter(Boolean);
+    const activeStops = stops
+      .map((s, i) => ({ ...s, rowIndex: i }))
+      .filter((s) => !s.isStart);
+    const all = [start, ...activeStops.map((s) => s.address)].filter(Boolean);
     if (all.length === 0) {
       gmap.current!.setCenter({ lat: -25.2744, lng: 133.7751 });
       gmap.current!.setZoom(5);
@@ -106,15 +109,18 @@ export default function MapView({
       geocoder.geocode({ address: addr }, (res: any, status: string) => {
         if (status === 'OK' && res[0]) {
           if (!hadMarkers && i === 0) gmap.current!.setCenter(res[0].geometry.location);
-          const marker = new window.google.maps.Marker({
-            map: gmap.current!,
-            position: res[0].geometry.location,
-            label: indexToLabel(i),
-            icon: defaultIcon,
-            zIndex: i,
-          });
-          marker.addListener('click', () => onSelect?.(i));
-          markers.current.push(marker);
+          if (i > 0) {
+            const stop = activeStops[i - 1];
+            const marker = new window.google.maps.Marker({
+              map: gmap.current!,
+              position: res[0].geometry.location,
+              label: indexToLabel(i - 1),
+              icon: defaultIcon,
+              zIndex: i,
+            });
+            marker.addListener('click', () => onSelect?.(stop.rowIndex));
+            markers.current.push(marker);
+          }
         }
       });
     });
@@ -125,18 +131,28 @@ export default function MapView({
   }, [start, stops, defaultIcon, onSelect]);
 
   useEffect(() => {
+    const rowToMarkerIndex = (row: number | null | undefined) => {
+      if (row == null) return null;
+      let count = 0;
+      for (let i = 0; i < row; i++) {
+        if (!stops[i].isStart) count++;
+      }
+      return stops[row].isStart ? null : count;
+    };
+    const hIdx = rowToMarkerIndex(hoveredIndex);
+    const sIdx = rowToMarkerIndex(selectedIndex);
     markers.current.forEach((m, i) => {
-      const highlight = i === hoveredIndex || i === selectedIndex;
+      const highlight = i === hIdx || i === sIdx;
       m.setIcon(highlight ? highlightedIcon : defaultIcon);
       m.setZIndex(highlight ? 999 : i);
     });
-    if (selectedIndex != null) {
-      const pos = markers.current[selectedIndex]?.getPosition();
+    if (sIdx != null) {
+      const pos = markers.current[sIdx]?.getPosition();
       if (pos) {
         gmap.current?.panTo(pos);
       }
     }
-  }, [hoveredIndex, selectedIndex, defaultIcon, highlightedIcon]);
+  }, [hoveredIndex, selectedIndex, stops, defaultIcon, highlightedIcon]);
 
   useEffect(() => {
     if (!renderer.current) return;

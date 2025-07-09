@@ -2,8 +2,7 @@
 import StopRow, { Stop } from './StopRow';
 
 function indexToLabel(i: number) {
-  if (i === 0) return '0';
-  return String.fromCharCode('A'.charCodeAt(0) + i - 1);
+  return String.fromCharCode('A'.charCodeAt(0) + i);
 }
 
 interface Props {
@@ -33,46 +32,48 @@ export default function RunTable({
 }: Props) {
   return (
     <table className="min-w-max w-full text-sm border-collapse mt-4">
-      <thead className="bg-gray-100 dark:bg-gray-800">
-        <tr className="text-left text-xs uppercase tracking-wider">
-          <th className="p-2"></th>
+      <thead>
+        <tr className="bg-gray-800 text-white font-semibold text-xs">
           <th className="p-2 text-center">#</th>
           <th className="p-2 text-left">Stop</th>
           <th className="p-2 text-left">Time (min)</th>
           <th className="p-2 text-left">ETA</th>
           <th className="p-2 text-left">ETD</th>
           <th className="p-2 text-left">Travel Time to Next</th>
-          <th className="p-2 text-red-500">✖</th>
+          <th className="p-2"></th>
         </tr>
       </thead>
       <tbody>
-        {stops.map((s, idx) => {
-          const showDay = idx === 0 || stops[idx - 1].day !== s.day;
-          return (
-            <>
-              {showDay && (
-                <tr className="bg-gray-100 dark:bg-gray-800 font-bold">
-                  <td className="p-2" colSpan={8}>{`Day ${s.day}`}</td>
-                </tr>
-              )}
-              <StopRow
-                key={s.id}
-                stop={s}
-                dragging={draggingId === s.id}
-                onRemove={() => remove(s.id)}
-                onDragStart={() => onDragStart(s.id)}
-                onDrop={() => onDrop(s.id)}
-                onTimeChange={(t) => onTimeChange(s.id, t)}
-                label={indexToLabel(idx)}
-                travelNext={s.travelNext}
-                hovered={hoveredIndex === idx}
-                selected={selectedIndex === idx}
-                onHover={(h) => onHover(h ? idx : null)}
-                onSelect={() => onSelect(idx)}
-              />
-            </>
-          );
-        })}
+        {(() => {
+          let lbl = 0;
+          return stops.map((s, idx) => {
+            const showDay = idx === 0 || stops[idx - 1].day !== s.day;
+            return (
+              <>
+                {showDay && (
+                  <tr className="bg-gray-900 text-gray-400 uppercase tracking-wider text-xs">
+                    <td className="p-2" colSpan={7}>{`Day ${s.day}`}</td>
+                  </tr>
+                )}
+                <StopRow
+                  key={s.id}
+                  stop={s}
+                  dragging={draggingId === s.id}
+                  onRemove={() => remove(s.id)}
+                  onDragStart={() => onDragStart(s.id)}
+                  onDrop={() => onDrop(s.id)}
+                  onTimeChange={(t) => onTimeChange(s.id, t)}
+                  label={!s.isStart ? indexToLabel(lbl++) : ''}
+                  travelNext={s.travelNext}
+                  hovered={hoveredIndex === idx}
+                  selected={selectedIndex === idx}
+                  onHover={(h) => onHover(h ? idx : null)}
+                  onSelect={() => onSelect(idx)}
+                />
+              </>
+            );
+          });
+        })()}
       </tbody>
     </table>
   );

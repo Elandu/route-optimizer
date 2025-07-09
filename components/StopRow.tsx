@@ -63,8 +63,15 @@ export default function StopRow({
             : 'cursor-move'
       } ${hovered || selected ? 'bg-gray-700 text-white' : ''}`}
     >
-      <td className="p-2">☰</td>
-      <td className="p-2 text-center">{label}</td>
+      <td className="p-2 text-center align-middle">
+        {!stop.isStart && (
+          <img
+            src="https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2_hdpi.png"
+            className="w-4 h-6 inline-block"
+            alt="pin"
+          />
+        )}
+      </td>
       <td className="p-2">
         {stop.isAccom
           ? `🛏️ Overnight Stop - ${stop.address}`
@@ -75,13 +82,17 @@ export default function StopRow({
               : stop.address}
       </td>
       <td className="p-2">
-        <input
-          type="number"
-          value={stop.time}
-          onChange={(e) => onTimeChange(parseInt(e.target.value) || 0)}
-          readOnly={stop.isAccom || stop.isStart}
-          className="border px-3 py-2 rounded w-16 dark:bg-gray-800 dark:text-white disabled:bg-gray-200"
-        />
+        {stop.isStart ? (
+          '-'
+        ) : (
+          <input
+            type="number"
+            value={stop.time}
+            onChange={(e) => onTimeChange(parseInt(e.target.value) || 0)}
+            readOnly={stop.isAccom}
+            className="border px-3 py-2 rounded w-16 dark:bg-gray-800 dark:text-white disabled:bg-gray-200"
+          />
+        )}
       </td>
       <td className="p-2">{stop.eta || '-'}</td>
       <td className="p-2">{stop.etd || '-'}</td>
