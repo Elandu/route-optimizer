@@ -1,13 +1,9 @@
 'use client';
 import {useRef} from 'react';
-import {useTabList, useTab, useTabPanel} from '@react-aria/tabs';
+import {useTabList, useTab, useTabPanel, useTabs} from '@react-aria/tabs';
 import {useTabListState, TabListState} from '@react-stately/tabs';
 import type {Key} from '@react-types/shared';
 import React from 'react';
-
-function useTabs<T>(_props: unknown, _state: TabListState<T>, ref: React.RefObject<HTMLElement | null>) {
-  return { tabsProps: { ref } };
-}
 
 export interface TabItem {
   key: string;
@@ -29,7 +25,7 @@ export default function Tabs({items, defaultKey}: TabsProps) {
   const tabsRef = useRef<HTMLDivElement>(null);
   const { tabsProps } = useTabs({}, state, tabsRef);
   const listRef = useRef<HTMLDivElement>(null);
-  const {tabListProps} = useTabList({onSelectionChange: (k) => state.setSelectedKey(k)}, state, listRef);
+  const {tabListProps} = useTabList({ onSelectionChange: (k) => state.setSelectedKey(k) }, state, listRef);
 
   return (
     <div {...tabsProps} ref={tabsRef}>
@@ -55,16 +51,14 @@ interface TabProps {
   children: React.ReactNode;
 }
 
-function Tab({itemKey, state, children}: TabProps) {
+function Tab({ itemKey, state, children }: TabProps) {
   const ref = useRef<HTMLButtonElement>(null);
-  const {tabProps, isSelected} = useTab({key: itemKey as Key}, state, ref);
+  const { tabProps } = useTab({ key: itemKey as Key }, state, ref);
   return (
     <button
       {...tabProps}
       ref={ref}
-      className={`px-4 py-2 focus:outline-none border-b-2 ${
-        isSelected ? 'border-blue-500 text-blue-600 font-medium' : 'border-transparent'
-      }`}
+      className="px-4 py-2 text-gray-500 border-b-2 border-transparent aria-selected:border-b-2 aria-selected:border-blue-500 aria-selected:font-semibold"
     >
       {children}
     </button>
@@ -77,9 +71,9 @@ interface TabPanelProps {
   children: React.ReactNode;
 }
 
-function TabPanel({itemKey, state, children}: TabPanelProps) {
+function TabPanel({ itemKey, state, children }: TabPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const {tabPanelProps} = useTabPanel({}, state, ref);
+  const { tabPanelProps } = useTabPanel({}, state, ref);
   if (state.selectedKey !== itemKey) return null;
   return (
     <div {...tabPanelProps} ref={ref} className="mt-4">

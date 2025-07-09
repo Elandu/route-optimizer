@@ -316,10 +316,11 @@ const remove = (id: string) => {
     <div className="flex flex-col w-full min-h-screen md:w-screen md:h-screen">
       <AuthHeader />
       <main className="flex flex-col lg:flex-row h-screen w-full overflow-hidden">
-        <div className="flex flex-col w-full lg:w-1/2 p-4 overflow-y-auto">
-          <Tabs
-            defaultKey="run"
-            items={[
+        <div className="flex flex-col w-full lg:w-1/2 p-4">
+          <div className="flex-grow">
+            <Tabs
+              defaultKey="run"
+              items={[
               {
                 key: 'run',
                 title: 'Run',
@@ -406,8 +407,9 @@ const remove = (id: string) => {
                 ),
               },
             ]}
-          />
-          <div className="mt-auto w-full">
+            />
+          </div>
+          <div className="h-[40%] overflow-y-auto">
             <RunTable
               stops={stopsWithTimes}
               draggingId={dragging}
