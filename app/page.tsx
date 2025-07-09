@@ -312,7 +312,7 @@ const remove = (id: string) => {
   };
 
   return (
-    <div>
+    <div className="flex flex-col w-full min-h-screen md:w-screen md:h-screen">
       <AuthHeader />
       <main className="flex flex-col lg:flex-row h-screen w-full overflow-hidden">
         <div className="w-full lg:w-1/2 p-4 overflow-y-auto">
