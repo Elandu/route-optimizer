@@ -5,6 +5,7 @@ import RunTable from '../components/RunTable';
 import ShareModal from '../components/ShareModal';
 import AuthHeader from '../components/AuthHeader';
 import MapView from '../components/MapView';
+import Tabs from '../components/Tabs';
 import { encrypt } from '../lib/encryption';
 import { addMinutes, formatTime, parseTime } from '../lib/time';
 import { DateTime } from 'luxon';
@@ -358,74 +359,78 @@ const remove = (id: string) => {
     </>
   );
 
+  const runMain = (
+    <main className="flex flex-col lg:flex-row w-full h-full overflow-hidden">
+      <div className="flex flex-col lg:w-[40%] h-screen">
+        <div className="flex flex-col gap-4 p-4 max-h-[50vh] overflow-y-auto border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+            <div className="flex flex-col">
+              <label htmlFor="start-address" className="mb-1">Start Address</label>
+              <AddressInput id="start-address" value={startAddress} onChange={updateStartAddress} placeholder="Start address" />
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="start-date" className="mb-1">Date</label>
+              <input id="start-date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white" />
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="start-time" className="mb-1">Start Time</label>
+              <input id="start-time" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full" />
+            </div>
+            <div className="flex flex-col">
+              <label htmlFor="end-time" className="mb-1">End Time</label>
+              <input id="end-time" type="time" value={eodTime} onChange={(e) => setEodTime(e.target.value)} className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+            <div className="flex gap-2">
+              <AddressInput id="add-address" value={address} onChange={setAddress} placeholder="Add address" />
+              <button onClick={addAddressLine} className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600">Add</button>
+            </div>
+            <textarea value={bulkAddresses} onChange={(e) => updateBulkAddresses(e.target.value)} placeholder="One address per line" className="border px-3 py-2 rounded w-full h-40 dark:bg-gray-800 dark:text-white" />
+          </div>
+          <div className="flex flex-col gap-2 mt-4">
+            <label className="flex items-center">
+              <input
+                id="overnight"
+                type="checkbox"
+                checked={isOvernight}
+                onChange={(e) => setIsOvernight(e.target.checked)}
+                className="mr-2"
+              />
+              Overnight
+            </label>
+            {isOvernight && (
+              <AddressInput id="accom" value={accomodation} onChange={setAccomodation} placeholder="Accomodation address" />
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col flex-grow overflow-y-auto p-4">
+          {tableContent}
+        </div>
+      </div>
+      <div className="lg:w-[60%] h-screen w-full overflow-hidden">
+        <MapView
+          start={startAddress}
+          stops={timedStops}
+          directions={directions}
+          hoveredIndex={hoveredIdx}
+          selectedIndex={selectedIdx}
+          onSelect={onSelectRow}
+        />
+      </div>
+    </main>
+  );
+
   return (
     <div className="flex flex-col w-full min-h-screen">
       <AuthHeader />
-      <main className="flex flex-col lg:flex-row w-full h-full overflow-hidden">
-        <div className="flex flex-col lg:w-[40%] h-screen">
-          <div className="flex flex-col gap-4 p-4 h-[50%] lg:max-h-[50%] overflow-hidden">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col">
-                <label htmlFor="start-address" className="mb-1">Start Address</label>
-                <AddressInput id="start-address" value={startAddress} onChange={updateStartAddress} placeholder="Start address" />
-              </div>
-              <div className="flex flex-col">
-                <label htmlFor="start-date" className="mb-1">Date</label>
-                <input id="start-date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white" />
-              </div>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex flex-col flex-1">
-                  <label htmlFor="start-time" className="mb-1">Start Time</label>
-                  <input id="start-time" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full" />
-                </div>
-                <div className="flex flex-col flex-1">
-                  <label htmlFor="end-time" className="mb-1">End Time</label>
-                  <input id="end-time" type="time" value={eodTime} onChange={(e) => setEodTime(e.target.value)} className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full" />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <AddressInput id="add-address" value={address} onChange={setAddress} placeholder="Add address" />
-                <button onClick={addAddressLine} className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600">Add</button>
-              </div>
-              <textarea value={bulkAddresses} onChange={(e) => updateBulkAddresses(e.target.value)} placeholder="One address per line" className="border px-3 py-2 rounded w-full h-40 dark:bg-gray-800 dark:text-white" />
-              <div className="flex flex-col gap-2">
-                <label className="flex items-center">
-                  <input
-                    id="overnight"
-                    type="checkbox"
-                    checked={isOvernight}
-                    onChange={(e) => setIsOvernight(e.target.checked)}
-                    className="mr-2"
-                  />
-                  Overnight
-                </label>
-                {isOvernight && (
-                  <AddressInput id="accom" value={accomodation} onChange={setAccomodation} placeholder="Accomodation address" />
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="hidden lg:flex flex-col flex-grow overflow-y-auto p-4">
-            {tableContent}
-          </div>
-          <details className="lg:hidden flex-grow overflow-y-auto">
-            <summary className="p-4 font-semibold bg-gray-200 dark:bg-gray-800 cursor-pointer">Stops</summary>
-            <div className="p-4 flex flex-col gap-2">
-              {tableContent}
-            </div>
-          </details>
-        </div>
-        <div className="lg:w-[60%] h-screen w-full overflow-hidden">
-          <MapView
-            start={startAddress}
-            stops={timedStops}
-            directions={directions}
-            hoveredIndex={hoveredIdx}
-            selectedIndex={selectedIdx}
-            onSelect={onSelectRow}
-          />
-        </div>
-      </main>
+      <Tabs
+        defaultKey="run"
+        items={[
+          { key: 'run', title: 'Run', content: runMain },
+          { key: 'settings', title: 'Settings', content: <div className="p-4">Settings coming soon</div> },
+        ]}
+      />
       <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
     </div>
   );

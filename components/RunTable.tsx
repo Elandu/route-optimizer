@@ -31,9 +31,9 @@ export default function RunTable({
   onSelect,
 }: Props) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-auto max-h-full">
       <table className="w-full text-sm border-collapse table-fixed">
-        <thead>
+        <thead className="sticky top-0 z-20">
           <tr className="bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold text-xs">
             <th className="p-2 text-center">#</th>
             <th className="p-2 text-left">Stop</th>
@@ -52,29 +52,29 @@ export default function RunTable({
               return (
                 <>
                   {showDay && (
-                  <tr className="bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 uppercase tracking-wider text-xs">
-                    <td className="p-2" colSpan={7}>{`Day ${s.day}`}</td>
-                  </tr>
-                )}
-                <StopRow
-                  key={s.id}
-                  stop={s}
-                  dragging={draggingId === s.id}
-                  onRemove={() => remove(s.id)}
-                  onDragStart={() => onDragStart(s.id)}
-                  onDrop={() => onDrop(s.id)}
-                  onTimeChange={(t) => onTimeChange(s.id, t)}
-                  label={!s.isStart ? indexToLabel(lbl++) : ''}
-                  travelNext={s.travelNext}
-                  hovered={hoveredIndex === idx}
-                  selected={selectedIndex === idx}
-                  onHover={(h) => onHover(h ? idx : null)}
-                  onSelect={() => onSelect(idx)}
-                />
-              </>
-            );
-          });
-        })()}
+                    <tr className="bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 uppercase tracking-wider text-xs sticky top-8 z-10">
+                      <td className="p-2" colSpan={7}>{`Day ${s.day}`}</td>
+                    </tr>
+                  )}
+                  <StopRow
+                    key={s.id}
+                    stop={s}
+                    dragging={draggingId === s.id}
+                    onRemove={() => remove(s.id)}
+                    onDragStart={() => onDragStart(s.id)}
+                    onDrop={() => onDrop(s.id)}
+                    onTimeChange={(t) => onTimeChange(s.id, t)}
+                    label={!s.isStart ? indexToLabel(lbl++) : ''}
+                    travelNext={s.travelNext}
+                    hovered={hoveredIndex === idx}
+                    selected={selectedIndex === idx}
+                    onHover={(h) => onHover(h ? idx : null)}
+                    onSelect={() => onSelect(idx)}
+                  />
+                </>
+              );
+            });
+          })()}
         </tbody>
       </table>
     </div>
