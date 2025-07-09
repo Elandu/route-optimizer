@@ -7,6 +7,7 @@ import AuthHeader from '../components/AuthHeader';
 import MapView from '../components/MapView';
 import Tabs, { TabItem } from '../components/Tabs';
 import AddAddressesModal from '../components/AddAddressesModal';
+import ResizeHandle from '../components/ResizeHandle';
 import useMediaQuery from '../lib/useMediaQuery';
 import { encrypt } from '../lib/encryption';
 import { addMinutes, formatTime, parseTime } from '../lib/time';
@@ -46,7 +47,7 @@ export default function Page() {
   // calculated stops with timings and extra rows
   const [timedStops, setTimedStops] = useState<Stop[]>([]);
   const [shareUrl, setShareUrl] = useState('');
-  const [dragging, setDragging] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
@@ -59,13 +60,8 @@ export default function Page() {
   const [shouldRecalc, setShouldRecalc] = useState(false);
   const stopsCountRef = useRef(0);
   const [currentTab, setCurrentTab] = useState('run');
-  const [tableHeight, setTableHeight] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = Number(localStorage.getItem('tableHeight'));
-      return saved || 300;
-    }
-    return 300;
-  });
+  const [tableHeight, setTableHeight] = useState(300);
+  const [dragging, setDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [mapState, setMapState] = useState<{center: google.maps.LatLngLiteral | null; zoom: number | null}>({ center: null, zoom: null });
@@ -88,11 +84,6 @@ export default function Page() {
     setBulkAddresses(lines.slice(0, MAX_STOPS).join('\n'));
   };
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('tableHeight', String(tableHeight));
-    }
-  }, [tableHeight]);
 
   useEffect(() => {
     stopsCountRef.current = stops.length;
@@ -120,47 +111,52 @@ export default function Page() {
     setAddress('');
   };
 
-  const startResize = (e: React.MouseEvent | React.TouchEvent) => {
+  const startDragging = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
-    const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    const startHeight = tableHeight;
-    const move = (ev: any) => {
-      const y = 'touches' in ev ? ev.touches[0].clientY : ev.clientY;
-      const delta = y - startY;
+    setDragging(true);
+  };
+
+  useEffect(() => {
+    if (!dragging) return;
+    const handleMove = (ev: MouseEvent | TouchEvent) => {
+      ev.preventDefault();
       const container = containerRef.current;
       if (!container) return;
-      const max = container.clientHeight - 100;
+      const rect = container.getBoundingClientRect();
+      const y = 'touches' in ev ? ev.touches[0].clientY : ev.clientY;
+      const max = rect.height - 100;
       const min = 100;
-      let newHeight = startHeight - delta;
+      let newHeight = rect.bottom - y;
       if (newHeight < min) newHeight = min;
       if (newHeight > max) newHeight = max;
       setTableHeight(newHeight);
     };
-    const stop = () => {
-      document.removeEventListener('mousemove', move);
+    const stop = () => setDragging(false);
+    document.addEventListener('mousemove', handleMove);
+    document.addEventListener('touchmove', handleMove, { passive: false });
+    document.addEventListener('mouseup', stop);
+    document.addEventListener('touchend', stop);
+    return () => {
+      document.removeEventListener('mousemove', handleMove);
+      document.removeEventListener('touchmove', handleMove);
       document.removeEventListener('mouseup', stop);
-      document.removeEventListener('touchmove', move);
       document.removeEventListener('touchend', stop);
     };
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', stop);
-    document.addEventListener('touchmove', move);
-    document.addEventListener('touchend', stop);
-  };
+  }, [dragging]);
 
-  const onDragStart = (id: string) => setDragging(id);
+  const onDragStart = (id: string) => setDraggingId(id);
 
   const onDrop = (id: string) => {
-    if (!dragging || dragging === id) return;
+    if (!draggingId || draggingId === id) return;
     const newStops = [...stops];
-    const from = newStops.findIndex((s) => s.id === dragging);
+    const from = newStops.findIndex((s) => s.id === draggingId);
     const to = newStops.findIndex((s) => s.id === id);
     if (from === -1 || to === -1) return;
     const [item] = newStops.splice(from, 1);
     newStops.splice(to, 0, item);
     setStops(newStops);
     recalcRoute(newStops);
-    setDragging(null);
+    setDraggingId(null);
   };
 
   const onHoverRow = useCallback((idx: number | null) => setHoveredIdx(idx), []);
@@ -380,7 +376,7 @@ const remove = (id: string) => {
     <>
       <RunTable
         stops={stopsWithTimes}
-        draggingId={dragging}
+        draggingId={draggingId}
         remove={remove}
         onDragStart={onDragStart}
         onDrop={onDrop}
@@ -421,8 +417,7 @@ const remove = (id: string) => {
   const runContent = (
     <div ref={containerRef} className="flex flex-col h-full">
       <div
-        className="flex flex-col gap-4 p-4 overflow-y-auto scroll-touch border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700"
-        style={{ height: tableHeight }}
+        className="flex flex-col gap-4 p-4 overflow-y-auto scroll-touch border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700 flex-1"
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <div className="flex flex-col w-full">
@@ -459,12 +454,8 @@ const remove = (id: string) => {
           </button>
         </div>
       </div>
-      <div
-        onMouseDown={startResize}
-        onTouchStart={startResize}
-        className="h-2 bg-gray-600 cursor-row-resize"
-      />
-      <div className="flex-1 overflow-auto scroll-touch p-4">
+      <ResizeHandle onDragStart={startDragging} />
+      <div className="overflow-auto scroll-touch p-4" style={{ height: tableHeight }}>
         {tableContent}
       </div>
     </div>
