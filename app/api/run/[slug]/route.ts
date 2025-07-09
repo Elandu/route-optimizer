@@ -1,18 +1,20 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(req: Request, { params }: { params: { slug: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   const run = await prisma.routeRun.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     include: { addresses: { orderBy: { order: 'asc' } } },
   })
   return NextResponse.json(run)
 }
 
 export async function PATCH(
-  req: Request,
-  { params }: { params: { slug: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
 ) {
+  const { slug } = await params
   const data = await req.json()
   if (!Array.isArray(data.addresses)) {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
@@ -33,7 +35,7 @@ export async function PATCH(
   )
 
   const run = await prisma.routeRun.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     include: { addresses: { orderBy: { order: 'asc' } } },
   })
   return NextResponse.json(run)
