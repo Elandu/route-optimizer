@@ -385,7 +385,7 @@ const remove = (id: string) => {
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full max-w-[160px]"
+                className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full lg:max-w-[160px]"
               />
             </div>
             <div className="flex flex-col">
@@ -395,7 +395,7 @@ const remove = (id: string) => {
                 type="time"
                 value={eodTime}
                 onChange={(e) => setEodTime(e.target.value)}
-                className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full max-w-[160px]"
+                className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white w-full lg:max-w-[160px]"
               />
             </div>
           </div>
