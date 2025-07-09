@@ -5,6 +5,7 @@ import RunTable from '../components/RunTable';
 import ShareModal from '../components/ShareModal';
 import AuthHeader from '../components/AuthHeader';
 import MapView from '../components/MapView';
+import { TabList, Tab, TabPanel } from '../components/Tabs';
 import { encrypt } from '../lib/encryption';
 import { addMinutes, formatTime, parseTime } from '../lib/time';
 import { DateTime } from 'luxon';
@@ -313,60 +314,73 @@ const remove = (id: string) => {
   return (
     <div>
       <AuthHeader />
-      <main className="p-4 max-w-5xl mx-auto grid md:grid-cols-2 md:grid-rows-2 gap-4">
-        <section className="p-4 border rounded shadow-sm">
-          <div className="flex gap-2 mb-2">
-          <AddressInput
-            value={startAddress}
-            onChange={setStartAddress}
-            placeholder="Start address"
-            title="Starting Address"
-            ariaLabel="Starting Address"
-          />
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
-          />
-          <input
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
-          />
-          <label className="flex flex-col text-xs">
-            <span>End of Day Time (EOD)</span>
-            <input
-              type="time"
-              value={eodTime}
-              onChange={(e) => setEodTime(e.target.value)}
-              className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
+      <main className="flex flex-col lg:flex-row h-screen w-full overflow-hidden">
+        <div className="w-full lg:w-1/2 p-4 overflow-y-auto">
+          <TabList className="border-b mb-4">
+            <Tab key="run">Run</Tab>
+            <Tab key="settings">Settings</Tab>
+          </TabList>
+
+          <TabPanel itemKey="run" className="space-y-4">
+            <AddressInput
+              value={startAddress}
+              onChange={setStartAddress}
+              placeholder="Start address"
+              title="Starting Address"
+              ariaLabel="Starting Address"
             />
-          </label>
-          <button
-            onClick={saveStart}
-            className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
-          >
-            Save
-          </button>
-          </div>
-          <div className="flex gap-2 items-center mb-2">
-          <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
-          <button
-            onClick={addAddressLine}
-            className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
-          >
-            Add
-          </button>
-          </div>
-          <div className="flex items-center gap-2 mb-2">
-            <label>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
+              />
+              <input
+                type="time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
+              />
+              <button
+                onClick={saveStart}
+                className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
+              >
+                Save
+              </button>
+            </div>
+            <div className="flex gap-2 items-center">
+              <AddressInput value={address} onChange={setAddress} placeholder="Add address" />
+              <button
+                onClick={addAddressLine}
+                className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
+              >
+                Add
+              </button>
+            </div>
+            <textarea
+              value={bulkAddresses}
+              onChange={(e) => updateBulkAddresses(e.target.value)}
+              placeholder="One address per line"
+              className="border px-3 py-2 rounded w-full h-40 dark:bg-gray-800 dark:text-white"
+            />
+          </TabPanel>
+
+          <TabPanel itemKey="settings" className="space-y-4 mt-4">
+            <label className="flex flex-col">
+              <span>End of Day Time (EOD)</span>
+              <input
+                type="time"
+                value={eodTime}
+                onChange={(e) => setEodTime(e.target.value)}
+                className="border px-3 py-2 rounded dark:bg-gray-800 dark:text-white"
+              />
+            </label>
+            <label className="flex items-center gap-2">
               <input
                 type="checkbox"
                 checked={isOvernight}
                 onChange={(e) => setIsOvernight(e.target.checked)}
-                className="mr-1"
               />
               Overnight
             </label>
@@ -377,49 +391,44 @@ const remove = (id: string) => {
                 placeholder="Accomodation address"
               />
             )}
-          </div>
-          <div className="mb-2">
-            <textarea
-              value={bulkAddresses}
-              onChange={(e) => updateBulkAddresses(e.target.value)}
-              placeholder="One address per line"
-              className="border px-3 py-2 rounded w-full h-40 dark:bg-gray-800 dark:text-white"
+          </TabPanel>
+
+          <div className="mt-4">
+            <RunTable
+              stops={stopsWithTimes}
+              draggingId={dragging}
+              remove={remove}
+              onDragStart={onDragStart}
+              onDrop={onDrop}
+              onTimeChange={changeTime}
             />
+            {stats && (
+              <div className="mt-2 text-sm">
+                {`Total travel time: ${stats.travel} mins`}
+                <br />
+                {`Average travel per stop: ${stats.avg} mins`}
+                <br />
+                {`Total stops: ${stats.stops}`}
+                <br />
+                {`Number of days: ${stats.days}`}
+              </div>
+            )}
+            <div className="flex flex-col gap-2 mt-4">
+              <button
+                onClick={generateRoute}
+                className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
+              >
+                Generate Run
+              </button>
+              {stops.length > 0 && <ShareModal url={shareUrl} onShare={generateShare} />}
+            </div>
           </div>
-        </section>
-        <section className="p-4 border rounded shadow-sm">
-          <MapView start={startAddress} stops={timedStops} directions={directions} />
-        </section>
-        <section className="p-4 border rounded shadow-sm">
-          <RunTable
-          stops={stopsWithTimes}
-          draggingId={dragging}
-          remove={remove}
-          onDragStart={onDragStart}
-          onDrop={onDrop}
-          onTimeChange={changeTime}
-        />
-        {stats && (
-          <div className="mt-2 text-sm">
-            {`Total travel time: ${stats.travel} mins`}
-            <br />
-            {`Average travel per stop: ${stats.avg} mins`}
-            <br />
-            {`Total stops: ${stats.stops}`}
-            <br />
-          {`Number of days: ${stats.days}`}
+        </div>
+        <div className="w-full lg:w-1/2 p-4">
+          <div className="w-full h-full rounded border overflow-hidden">
+            <MapView start={startAddress} stops={timedStops} directions={directions} />
           </div>
-        )}
-        </section>
-        <section className="p-4 border rounded shadow-sm flex flex-col gap-2">
-          <button
-            onClick={generateRoute}
-            className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
-          >
-            Generate Run
-          </button>
-          {stops.length > 0 && <ShareModal url={shareUrl} onShare={generateShare} />}
-        </section>
+        </div>
       </main>
       <Script src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&language=en-AU&region=AU`} />
       <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
