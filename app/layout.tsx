@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "../styles/globals.css";
+import { HeroUIProvider } from "@heroui/react";
+import { ThemeProvider } from "next-themes";
 
 export const metadata: Metadata = {
   title: "Inspection Run Optimiser",
@@ -19,7 +21,11 @@ export default function RootLayout({
       <body
         className="antialiased w-full max-w-full min-h-screen md:h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-body overflow-hidden touch-manipulation scroll-touch"
       >
-        {children}
+        <HeroUIProvider>
+          <ThemeProvider attribute="class" defaultTheme="light">
+            {children}
+          </ThemeProvider>
+        </HeroUIProvider>
       </body>
     </html>
   );

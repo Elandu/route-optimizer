@@ -1,9 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Tabs as HeroTabs, Tab } from '@heroui/react';
 
 export interface TabItem {
   key: string;
-  title: string;
+  title: React.ReactNode;
   content: React.ReactNode;
 }
 
@@ -12,40 +13,50 @@ interface TabsProps {
   defaultKey?: string;
   selectedKey?: string;
   onChange?: (key: string) => void;
+  storageKey?: string;
 }
-export default function Tabs({ items, defaultKey, selectedKey, onChange }: TabsProps) {
-  const [internalKey, setInternalKey] = useState(defaultKey ?? items[0]?.key);
-  const activeKey = selectedKey ?? internalKey;
 
-  const change = (key: string) => {
-    setInternalKey(key);
-    onChange?.(key);
+export default function Tabs({
+  items,
+  defaultKey,
+  selectedKey,
+  onChange,
+  storageKey = 'currentTab',
+}: TabsProps) {
+  const initial = () => {
+    if (selectedKey) return selectedKey;
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(storageKey) ?? defaultKey ?? items[0]?.key;
+    }
+    return defaultKey ?? items[0]?.key;
+  };
+
+  const [activeKey, setActiveKey] = useState<string | undefined>(initial);
+
+  useEffect(() => {
+    if (selectedKey) setActiveKey(selectedKey);
+  }, [selectedKey]);
+
+  const change = (key: React.Key) => {
+    const val = String(key);
+    setActiveKey(val);
+    try {
+      localStorage.setItem(storageKey, val);
+    } catch {}
+    onChange?.(val);
   };
 
   return (
-    <div className="w-full h-full flex flex-col" role="tablist">
-      <div className="flex border-b mb-4">
-        {items.map((item) => (
-          <button
-            key={item.key}
-            role="tab"
-            aria-selected={activeKey === item.key}
-            onClick={() => change(item.key)}
-            className={`px-4 py-2 focus:outline-none border-b-2 ${
-              activeKey === item.key ? 'border-blue-500 text-blue-600 font-medium' : 'border-transparent'
-            }`}
-          >
-            {item.title}
-          </button>
-        ))}
-      </div>
-      {items.map((item) =>
-        activeKey === item.key ? (
-          <div key={item.key} role="tabpanel" className="mt-4 flex-1 flex">
-            {item.content}
-          </div>
-        ) : null
-      )}
-    </div>
+    <HeroTabs
+      selectedKey={activeKey}
+      onSelectionChange={change}
+      className="flex flex-col flex-1 overflow-hidden"
+    >
+      {items.map((item) => (
+        <Tab key={item.key} title={item.title}>
+          <div className="pt-4 flex flex-col flex-1 overflow-y-auto">{item.content}</div>
+        </Tab>
+      ))}
+    </HeroTabs>
   );
 }
