@@ -51,7 +51,7 @@ export default function Tabs({
 
   return (
     <Tab.Group selectedIndex={index} onChange={change} as="div" className="flex flex-col flex-1 overflow-hidden">
-      <Tab.List className="flex space-x-2 border-b px-4">
+      <Tab.List className="flex border-b px-4 py-2 space-x-2 sm:space-x-4">
         {items.map((item) => (
           <Tab
             key={item.key}
