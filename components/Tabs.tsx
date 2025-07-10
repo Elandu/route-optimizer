@@ -23,7 +23,7 @@ export default function Tabs({ items, defaultKey, selectedKey, onChange }: TabsP
   };
 
   return (
-    <div className="w-full" role="tablist">
+    <div className="w-full h-full flex flex-col" role="tablist">
       <div className="flex border-b mb-4">
         {items.map((item) => (
           <button
@@ -41,7 +41,7 @@ export default function Tabs({ items, defaultKey, selectedKey, onChange }: TabsP
       </div>
       {items.map((item) =>
         activeKey === item.key ? (
-          <div key={item.key} role="tabpanel" className="mt-4">
+          <div key={item.key} role="tabpanel" className="mt-4 flex-1 flex">
             {item.content}
           </div>
         ) : null

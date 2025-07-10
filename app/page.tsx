@@ -515,41 +515,47 @@ const remove = (id: string) => {
     </>
   );
 
-  const runContent = (
+  const addressFields = (
+    <div className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="flex flex-col w-full">
+          <label htmlFor="start-address" className="mb-1">Start Address</label>
+          <AddressInput
+            id="start-address"
+            value={startAddress}
+            onChange={updateStartAddress}
+            placeholder="Start address"
+            className="h-10"
+          />
+        </div>
+        <div className="flex gap-2 w-full items-end">
+          <AddressInput id="add-address" value={address} onChange={setAddress} placeholder="Add address" className="h-10" />
+          <button
+            onClick={addAddressLine}
+            className="h-10 px-4 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
+          >
+            Add
+          </button>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <textarea
+          value={bulkAddresses}
+          onChange={(e) => updateBulkAddresses(e.target.value)}
+          placeholder="One address per line"
+          className="border px-3 py-2 rounded w-full h-40 box-border appearance-none dark:bg-gray-800 dark:text-white md:col-span-2"
+        />
+      </div>
+    </div>
+  );
+
+  const runContent = isDesktop ? (
     <div ref={containerRef} className="flex flex-col h-full">
       <div
         className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700"
         style={{ height: tableHeight, minHeight: 150, maxHeight: '80vh' }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex flex-col w-full">
-            <label htmlFor="start-address" className="mb-1">Start Address</label>
-            <AddressInput
-              id="start-address"
-              value={startAddress}
-              onChange={updateStartAddress}
-              placeholder="Start address"
-              className="h-10"
-            />
-          </div>
-          <div className="flex gap-2 w-full items-end">
-            <AddressInput id="add-address" value={address} onChange={setAddress} placeholder="Add address" className="h-10" />
-            <button
-              onClick={addAddressLine}
-              className="h-10 px-4 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
-            >
-              Add
-            </button>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <textarea
-            value={bulkAddresses}
-            onChange={(e) => updateBulkAddresses(e.target.value)}
-            placeholder="One address per line"
-            className="border px-3 py-2 rounded w-full h-40 box-border appearance-none dark:bg-gray-800 dark:text-white md:col-span-2"
-          />
-        </div>
+        {addressFields}
       </div>
       <div
         onMouseDown={startResize}
@@ -560,6 +566,14 @@ const remove = (id: string) => {
         {tableContent}
       </div>
     </div>
+  ) : (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-auto scroll-touch p-4">{tableContent}</div>
+    </div>
+  );
+
+  const addressesContent = isDesktop ? null : (
+    <div className="flex flex-col h-full overflow-y-auto">{addressFields}</div>
   );
 
   const settingsContent = (
@@ -712,16 +726,17 @@ const remove = (id: string) => {
       { key: 'settings', title: 'Settings', content: settingsContent },
     ];
     if (!isDesktop) {
-      items.splice(1, 0, { key: 'map', title: 'Map', content: null });
+      items.splice(1, 0, { key: 'addresses', title: 'Addresses', content: addressesContent });
+      items.splice(2, 0, { key: 'map', title: 'Map', content: null });
     }
     return items;
-  }, [runContent, settingsContent, isDesktop]);
+  }, [runContent, addressesContent, settingsContent, isDesktop]);
 
   return (
     <div className="flex flex-col w-full max-w-full overflow-x-hidden min-h-screen">
       <AuthHeader />
       <div className="flex flex-col md:flex-row flex-grow md:overflow-hidden gap-4 md:gap-0">
-        <div className="md:w-[40%] flex flex-col">
+        <div className="md:w-[40%] flex flex-col flex-1">
           <Tabs
             defaultKey="run"
             selectedKey={currentTab}
