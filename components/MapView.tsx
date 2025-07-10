@@ -79,6 +79,7 @@ export default function MapView({
         zoom: mapState?.zoom ?? 5,
         disableDefaultUI: true,
         zoomControl: true,
+        streetViewControl: false,
       });
       renderer.current = new window.google.maps.DirectionsRenderer();
       renderer.current!.setMap(gmap.current);
@@ -103,6 +104,7 @@ export default function MapView({
           zoom: mapState?.zoom ?? 5,
           disableDefaultUI: true,
           zoomControl: true,
+          streetViewControl: false,
         });
         gmap.current!.addListener('idle', () => {
           zoomRef.current = gmap.current?.getZoom() ?? null;
@@ -219,7 +221,7 @@ export default function MapView({
   return (
     <div
       ref={mapRef}
-      className="w-full h-full overflow-hidden"
+      className="relative w-full h-full overflow-hidden"
     />
   );
 }
