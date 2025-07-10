@@ -84,6 +84,11 @@ export default function AuthModal({ open, onClose }: Props) {
       }}
       placement="center"
       scrollBehavior="inside"
+      classNames={{
+        wrapper: 'z-[1000]',
+        backdrop: 'z-[1000]',
+        base: 'w-full max-w-[95vw] sm:max-w-md'
+      }}
     >
       <ModalContent className="space-y-4 max-h-[90vh] overflow-y-auto">
         <ModalHeader>Account</ModalHeader>
