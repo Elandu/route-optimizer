@@ -5,6 +5,7 @@ import RunTable from "../components/RunTable";
 import ShareModal from "../components/ShareModal";
 import AuthHeader from "../components/AuthHeader";
 import MapView from "../components/MapView";
+import { Button } from "@heroui/react";
 import Tabs, { TabItem } from "../components/Tabs";
 import useMediaQuery from "../lib/useMediaQuery";
 import { encrypt } from "../lib/encryption";
@@ -647,7 +648,7 @@ export default function Page() {
             className="h-3 bg-gray-600 cursor-row-resize touch-none"
           />
         )}
-        <div className="flex-1 overflow-y-auto scroll-touch p-4 pb-24">
+        <div className="flex-1 overflow-y-auto scroll-touch p-4 pb-32">
           {tableContent}
         </div>
       </div>
@@ -857,8 +858,14 @@ export default function Page() {
   }, [runContent, settingsContent, mapTabContent, isDesktop]);
 
   return (
-    <div className="flex flex-col w-full max-w-full overflow-x-hidden min-h-screen">
+    <div
+      className="flex flex-col w-full max-w-screen-xl mx-auto px-4 overflow-x-hidden min-h-screen"
+      style={{ scrollbarGutter: "stable both-edges" }}
+    >
       <AuthHeader />
+      <div className="my-4">
+        <Button variant="solid" color="primary">Test</Button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr] flex-grow md:overflow-hidden gap-4">
         <div className="flex flex-col flex-1">
           <Tabs
