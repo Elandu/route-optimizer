@@ -13,7 +13,7 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "types": ["@types/google.maps"],
+    "types": ["@types/google.maps", "bcryptjs"],
     "plugins": [
       {
         "name": "next"
