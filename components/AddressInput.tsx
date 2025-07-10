@@ -53,7 +53,7 @@ export default function AddressInput({ value, onChange, placeholder, title, aria
       id={id}
       ref={ref}
       title={title}
-      className="border px-3 py-1.5 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
+      className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
     />
   );
 }
