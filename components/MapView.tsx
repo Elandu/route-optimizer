@@ -58,6 +58,7 @@ export default function MapView({
   const zoomRef = useRef<number | null>(null);
   const centerRef = useRef<google.maps.LatLng | null>(null);
   const infoRef = useRef<google.maps.InfoWindow | null>(null);
+  const prevDirections = useRef<google.maps.DirectionsResult | null>(null);
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
@@ -83,7 +84,9 @@ export default function MapView({
         zoomControl: true,
         streetViewControl: false,
       });
-      renderer.current = new window.google.maps.DirectionsRenderer();
+      renderer.current = new window.google.maps.DirectionsRenderer({
+        preserveViewport: true,
+      });
       renderer.current!.setMap(gmap.current);
       gmap.current!.addListener('idle', () => {
         zoomRef.current = gmap.current?.getZoom() ?? null;
@@ -215,20 +218,31 @@ export default function MapView({
   }, [selectedIndex, stops, isLoaded]);
 
   useEffect(() => {
-    if (!isLoaded || !renderer.current) return;
-    const zoom = mapState?.zoom ?? zoomRef.current ?? gmap.current?.getZoom();
+    if (!isLoaded || !renderer.current || !gmap.current) return;
+    const map = gmap.current;
+    const zoom = mapState?.zoom ?? zoomRef.current ?? map.getZoom();
     const center = mapState?.center
       ? new window.google.maps.LatLng(mapState.center)
-      : centerRef.current ?? gmap.current?.getCenter();
+      : centerRef.current ?? map.getCenter();
+    const prev = prevDirections.current;
     if (directions) {
       renderer.current.setDirections(directions);
+      if (directions !== prev) {
+        const bounds = directions.routes?.[0]?.bounds;
+        if (bounds) {
+          map.fitBounds(bounds);
+          prevDirections.current = directions ?? null;
+          return;
+        }
+      }
     } else {
       renderer.current.set('directions', null);
     }
     if (center && zoom != null) {
-      gmap.current?.setCenter(center);
-      gmap.current?.setZoom(zoom);
+      map.setCenter(center);
+      map.setZoom(zoom);
     }
+    prevDirections.current = directions ?? null;
   }, [directions, isLoaded, mapState?.center, mapState?.zoom]);
 
   useEffect(() => {
