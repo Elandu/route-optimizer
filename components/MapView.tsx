@@ -83,7 +83,9 @@ export default function MapView({
         zoomControl: true,
         streetViewControl: false,
       });
-      renderer.current = new window.google.maps.DirectionsRenderer();
+      renderer.current = new window.google.maps.DirectionsRenderer({
+        preserveViewport: true,
+      });
       renderer.current!.setMap(gmap.current);
       gmap.current!.addListener('idle', () => {
         zoomRef.current = gmap.current?.getZoom() ?? null;
