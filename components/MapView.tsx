@@ -177,6 +177,19 @@ export default function MapView({
       m.setIcon(highlight ? highlightedIcon : defaultIcon);
       m.setZIndex(highlight ? 999 : i);
     });
+  }, [hoveredIndex, selectedIndex, stops, defaultIcon, highlightedIcon, isLoaded]);
+
+  useEffect(() => {
+    if (!isLoaded || !window.google) return;
+    const rowToMarkerIndex = (row: number | null | undefined) => {
+      if (row == null) return null;
+      let count = 0;
+      for (let i = 0; i < row; i++) {
+        if (!stops[i].isStart) count++;
+      }
+      return stops[row].isStart ? null : count;
+    };
+    const sIdx = rowToMarkerIndex(selectedIndex);
     if (!infoRef.current) infoRef.current = new window.google.maps.InfoWindow();
     if (sIdx != null) {
       const pos = markers.current[sIdx]?.getPosition();
@@ -188,7 +201,7 @@ export default function MapView({
     } else {
       infoRef.current!.close();
     }
-  }, [hoveredIndex, selectedIndex, stops, defaultIcon, highlightedIcon, isLoaded]);
+  }, [selectedIndex, stops, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded || !renderer.current) return;
