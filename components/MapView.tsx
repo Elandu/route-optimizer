@@ -229,10 +229,8 @@ export default function MapView({
       renderer.current.setDirections(directions);
       if (directions !== prev) {
         const bounds = directions.routes?.[0]?.bounds;
-        if (bounds) {
+        if (bounds && (mapState?.center == null || mapState.zoom == null)) {
           map.fitBounds(bounds);
-          prevDirections.current = directions ?? null;
-          return;
         }
       }
     } else {
