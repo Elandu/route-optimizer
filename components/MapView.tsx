@@ -143,7 +143,12 @@ export default function MapView({
     all.forEach((addr, i) => {
       geocoder.geocode({ address: addr }, (res: any, status: string) => {
         if (status === 'OK' && res[0]) {
-          if (!hadMarkers && i === 0) gmap.current!.setCenter(res[0].geometry.location);
+          if (
+            !hadMarkers &&
+            i === 0 &&
+            (mapState?.center == null || mapState.zoom == null)
+          )
+            gmap.current!.setCenter(res[0].geometry.location);
           if (i > 0) {
             const stop = activeStops[i - 1];
             const marker = new window.google.maps.Marker({
@@ -229,10 +234,8 @@ export default function MapView({
       renderer.current.setDirections(directions);
       if (directions !== prev) {
         const bounds = directions.routes?.[0]?.bounds;
-        if (bounds) {
+        if (bounds && (mapState?.center == null || mapState.zoom == null)) {
           map.fitBounds(bounds);
-          prevDirections.current = directions ?? null;
-          return;
         }
       }
     } else {
