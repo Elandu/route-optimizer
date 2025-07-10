@@ -647,8 +647,9 @@ export default function Page() {
   );
 
   const addressesContent = (
-    <div className="min-h-[calc(100vh-8rem)] overflow-y-auto">
+    <div className="flex flex-col min-h-[calc(100vh-8rem)] overflow-y-auto">
       {addressFields}
+      {!isDesktop && runActions}
     </div>
   );
 
@@ -677,7 +678,7 @@ export default function Page() {
           {tableContent}
         </div>
       </div>
-      {runActions}
+      {isDesktop && runActions}
     </div>
   );
 
@@ -879,7 +880,7 @@ export default function Page() {
   return (
     <div className="flex flex-col w-full max-w-full overflow-x-hidden min-h-screen">
       <AuthHeader />
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr] flex-grow md:overflow-hidden gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr] flex-grow overflow-hidden gap-4">
         <div className="flex flex-col flex-1">
           <Tabs
             defaultKey="run"
