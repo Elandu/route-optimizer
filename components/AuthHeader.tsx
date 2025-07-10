@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import UserGreeting from './UserGreeting';
 
 enum Theme {
   Light = 'light',
@@ -7,7 +8,6 @@ enum Theme {
 }
 
 export default function AuthHeader() {
-  const [name] = useState('Demo User');
   const [theme, setTheme] = useState<Theme>(Theme.Light);
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function AuthHeader() {
 
   return (
     <header className="flex justify-between items-center p-4 border-b">
-      <div>{name}</div>
+      <UserGreeting />
       <button
         onClick={toggleDarkMode}
         className="text-sm text-gray-600 dark:text-gray-300"

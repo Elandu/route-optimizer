@@ -5,35 +5,31 @@ import bcrypt from 'bcryptjs';
 export async function POST(req: Request) {
   try {
     const data = await req.json();
-    const name = (data.name || '').trim();
     const email = (data.email || '').toLowerCase();
     const password = data.password || '';
 
-    if (!name || !email || !password) {
+    if (!email || !password) {
       return NextResponse.json(
-        { error: 'All fields are required.' },
-        { status: 400 }
-      );
-    }
-    if (password.length < 8) {
-      return NextResponse.json(
-        { error: 'Password must be at least 8 characters.' },
+        { error: 'Email and password are required.' },
         { status: 400 }
       );
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
       return NextResponse.json(
-        { error: 'Email already in use.' },
+        { error: 'Invalid credentials.' },
         { status: 400 }
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await prisma.user.create({
-      data: { name, email, hashedPassword },
-    });
+    const valid = await bcrypt.compare(password, user.hashedPassword);
+    if (!valid) {
+      return NextResponse.json(
+        { error: 'Invalid credentials.' },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json({ name: user.name, email: user.email });
   } catch (err) {

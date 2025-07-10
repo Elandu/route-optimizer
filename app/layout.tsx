@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "../styles/globals.css";
 import { HeroUIProvider } from "@heroui/react";
 import { ThemeProvider } from "next-themes";
+import { UserProvider } from "../UserContext";
 
 export const metadata: Metadata = {
   title: "Inspection Run Optimiser",
@@ -23,7 +24,9 @@ export default function RootLayout({
       >
         <HeroUIProvider>
           <ThemeProvider attribute="class" defaultTheme="light">
-            {children}
+            <UserProvider>
+              {children}
+            </UserProvider>
           </ThemeProvider>
         </HeroUIProvider>
       </body>
