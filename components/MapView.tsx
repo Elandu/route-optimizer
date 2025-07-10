@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useRef, useMemo } from 'react';
 import { useLoadScript, type Libraries } from '@react-google-maps/api';
 
@@ -58,11 +59,26 @@ export default function MapView({
   const zoomRef = useRef<number | null>(null);
   const centerRef = useRef<google.maps.LatLng | null>(null);
   const infoRef = useRef<google.maps.InfoWindow | null>(null);
+  const lastStateRef = useRef<{
+    center: google.maps.LatLngLiteral | null;
+    zoom: number | null;
+  }>({ center: null, zoom: null });
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     libraries: GOOGLE_MAPS_LIBRARIES,
   });
+
+  // keep last known state without triggering re-renders
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // update markers when stops change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    lastStateRef.current = {
+      center: mapState?.center ?? null,
+      zoom: mapState?.zoom ?? null,
+    };
+  }, []);
 
 
   const defaultIcon = useMemo(getDefaultMarkerIcon, []);
@@ -72,6 +88,8 @@ export default function MapView({
     return String.fromCharCode('A'.charCodeAt(0) + i);
   };
 
+  // initialize map once
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!isLoaded || !window.google) return;
     function init() {
@@ -88,14 +106,20 @@ export default function MapView({
       gmap.current!.addListener('idle', () => {
         zoomRef.current = gmap.current?.getZoom() ?? null;
         centerRef.current = gmap.current?.getCenter() ?? null;
-        onMapStateChange?.({
-          center: gmap.current?.getCenter()?.toJSON() ?? null,
-          zoom: gmap.current?.getZoom() ?? null,
-        });
+        const center = gmap.current?.getCenter()?.toJSON() ?? null;
+        const zoom = gmap.current?.getZoom() ?? null;
+        if (
+          center?.lat !== lastStateRef.current.center?.lat ||
+          center?.lng !== lastStateRef.current.center?.lng ||
+          zoom !== lastStateRef.current.zoom
+        ) {
+          lastStateRef.current = { center, zoom };
+          onMapStateChange?.({ center, zoom });
+        }
       });
     }
     init();
-  }, [isLoaded, mapState?.center, mapState?.zoom, onMapStateChange]);
+  }, [isLoaded, onMapStateChange]);
 
   useEffect(() => {
     if (!isLoaded || !window.google) return;
@@ -111,10 +135,16 @@ export default function MapView({
         gmap.current!.addListener('idle', () => {
           zoomRef.current = gmap.current?.getZoom() ?? null;
           centerRef.current = gmap.current?.getCenter() ?? null;
-          onMapStateChange?.({
-            center: gmap.current?.getCenter()?.toJSON() ?? null,
-            zoom: gmap.current?.getZoom() ?? null,
-          });
+          const center = gmap.current?.getCenter()?.toJSON() ?? null;
+          const zoom = gmap.current?.getZoom() ?? null;
+          if (
+            center?.lat !== lastStateRef.current.center?.lat ||
+            center?.lng !== lastStateRef.current.center?.lng ||
+            zoom !== lastStateRef.current.zoom
+          ) {
+            lastStateRef.current = { center, zoom };
+            onMapStateChange?.({ center, zoom });
+          }
         });
       } else {
         return;
@@ -166,9 +196,6 @@ export default function MapView({
     defaultIcon,
     onSelect,
     isLoaded,
-    mapState?.center,
-    mapState?.zoom,
-    onMapStateChange,
   ]);
 
   useEffect(() => {

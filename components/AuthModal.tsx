@@ -76,6 +76,8 @@ export default function AuthModal({ open, onClose }: Props) {
     }
   };
 
+  if (!open) return null;
+
   return (
     <Modal
       isOpen={open}
