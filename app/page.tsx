@@ -724,7 +724,7 @@ const remove = (id: string) => {
       </div>
     </div>
   );
-  const mapTabContent = !isDesktop ? (
+  const mapTabContent = (
     <div className="h-[70vh] w-full overflow-y-auto">
       <MapView
         start={startAddress}
@@ -737,7 +737,7 @@ const remove = (id: string) => {
         onMapStateChange={setMapState}
       />
     </div>
-  ) : null;
+  );
 
   const tabItems = useMemo(() => {
     const items = [
