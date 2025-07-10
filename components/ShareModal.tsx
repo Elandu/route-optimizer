@@ -1,5 +1,13 @@
 'use client';
 import { useState } from 'react';
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  Button,
+} from '@heroui/react';
 
 interface Props {
   url: string;
@@ -10,33 +18,33 @@ export default function ShareModal({ url, onShare }: Props) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        onClick={() => {
+      <Button
+        onPress={() => {
           onShare?.();
           setOpen(true);
         }}
-        className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
+        color="primary"
       >
         Share
-      </button>
-      {open && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded shadow max-w-sm w-full">
-            <button
-              className="float-right text-red-600 hover:text-red-800"
-              onClick={() => setOpen(false)}
-            >
-              X
-            </button>
+      </Button>
+      <Modal isOpen={open} onOpenChange={setOpen} placement="center">
+        <ModalContent>
+          <ModalHeader>Share</ModalHeader>
+          <ModalBody>
             <p className="mb-2">Share this link:</p>
             <input
               value={url}
               readOnly
               className="w-full border px-3 py-2 rounded dark:bg-gray-700 dark:text-white"
             />
-          </div>
-        </div>
-      )}
+          </ModalBody>
+          <ModalFooter>
+            <Button color="primary" onPress={() => setOpen(false)}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 }

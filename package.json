@@ -9,23 +9,26 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroui/react": "^2.7.11",
     "@prisma/client": "^6.11.1",
     "@react-aria/i18n": "^3.12.10",
     "@react-aria/overlays": "^3.27.3",
     "@react-aria/ssr": "^3.9.9",
     "@react-aria/tabs": "^3.10.5",
+    "@react-google-maps/api": "^2.19.1",
     "@react-stately/tabs": "^3.8.3",
     "luxon": "^3.6.1",
     "next": "15.3.5",
+    "next-themes": "^0.4.6",
     "prisma": "^6.11.1",
     "react": "^19.0.0",
     "react-aria": "^3.41.1",
     "react-aria-components": "^1.10.1",
     "react-dom": "^19.0.0",
-    "react-stately": "^3.39.0",
-    "@react-google-maps/api": "^2.19.1"
+    "react-stately": "^3.39.0"
   },
   "devDependencies": {
+    "@heroui/theme": "^2.4.17",
     "@types/google.maps": "^3.58.1",
     "@types/luxon": "^3.6.2",
     "@types/node": "^20",
