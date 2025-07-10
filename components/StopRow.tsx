@@ -1,5 +1,6 @@
 'use client';
 import { useRef } from 'react';
+import Image from 'next/image';
 
 export interface Stop {
   id: string;
@@ -65,10 +66,12 @@ export default function StopRow({
     >
       <td className="p-2 text-center align-middle">
         {!stop.isStart && (
-          <img
+          <Image
             src="https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2_hdpi.png"
             className="w-4 h-6 inline-block"
             alt="pin"
+            width={16}
+            height={24}
           />
         )}
       </td>
