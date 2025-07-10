@@ -1,16 +1,16 @@
-'use client';
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import AddressInput from '../components/AddressInput';
-import RunTable from '../components/RunTable';
-import ShareModal from '../components/ShareModal';
-import AuthHeader from '../components/AuthHeader';
-import MapView from '../components/MapView';
-import Tabs, { TabItem } from '../components/Tabs';
-import useMediaQuery from '../lib/useMediaQuery';
-import { encrypt } from '../lib/encryption';
-import { addMinutes, formatTime, parseTime } from '../lib/time';
-import { DateTime } from 'luxon';
-import Script from 'next/script';
+"use client";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import AddressInput from "../components/AddressInput";
+import RunTable from "../components/RunTable";
+import ShareModal from "../components/ShareModal";
+import AuthHeader from "../components/AuthHeader";
+import MapView from "../components/MapView";
+import Tabs, { TabItem } from "../components/Tabs";
+import useMediaQuery from "../lib/useMediaQuery";
+import { encrypt } from "../lib/encryption";
+import { addMinutes, formatTime, parseTime } from "../lib/time";
+import { DateTime } from "luxon";
+import Script from "next/script";
 
 interface Stop {
   id: string;
@@ -34,151 +34,174 @@ declare global {
 }
 
 export default function Page() {
-  const [startAddress, setStartAddress] = useState('');
+  const [startAddress, setStartAddress] = useState("");
   const [startDate, setStartDate] = useState(DateTime.now().toISODate());
-  const [startTime, setStartTime] = useState('08:30');
-  const [eodTime, setEodTime] = useState('17:00');
-  const [address, setAddress] = useState('');
-  const [bulkAddresses, setBulkAddresses] = useState('');
+  const [startTime, setStartTime] = useState("08:30");
+  const [eodTime, setEodTime] = useState("17:00");
+  const [address, setAddress] = useState("");
+  const [bulkAddresses, setBulkAddresses] = useState("");
   // user provided stops (without start/end or accom rows)
   const [stops, setStops] = useState<Stop[]>([]);
   // calculated stops with timings and extra rows
   const [timedStops, setTimedStops] = useState<Stop[]>([]);
-  const [shareUrl, setShareUrl] = useState('');
+  const [shareUrl, setShareUrl] = useState("");
   const [dragging, setDragging] = useState<string | null>(null);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
-  const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
+  const [directions, setDirections] =
+    useState<google.maps.DirectionsResult | null>(null);
   const [isOvernight, setIsOvernight] = useState(false);
-  const [accomodation, setAccomodation] = useState('');
+  const [accomodation, setAccomodation] = useState("");
   const getBool = (key: string, def: boolean) => {
-    if (typeof window === 'undefined') return def;
+    if (typeof window === "undefined") return def;
     const v = localStorage.getItem(key);
-    return v == null ? def : v === 'true';
+    return v == null ? def : v === "true";
   };
   const getNum = (key: string, def: number) => {
-    if (typeof window === 'undefined') return def;
+    if (typeof window === "undefined") return def;
     const v = localStorage.getItem(key);
     return v == null ? def : Number(v);
   };
   const getStr = (key: string, def: string) => {
-    if (typeof window === 'undefined') return def;
+    if (typeof window === "undefined") return def;
     return localStorage.getItem(key) ?? def;
   };
 
-  const [avoidTolls, setAvoidTolls] = useState(() => getBool('avoidTolls', false));
-  const [avoidFerries, setAvoidFerries] = useState(() => getBool('avoidFerries', false));
-  const [avoidHighways, setAvoidHighways] = useState(() => getBool('avoidHighways', false));
-  const [maxStopsPerDay, setMaxStopsPerDay] = useState(() => getNum('maxStopsPerDay', 5));
-  const [defaultServiceTime, setDefaultServiceTime] = useState(() => getNum('defaultServiceTime', 60));
-  const [timeBuffer, setTimeBuffer] = useState(() => getNum('timeBuffer', 5));
-  const [returnToStart, setReturnToStart] = useState(() => getBool('returnToStart', true));
-  const [endAddress, setEndAddress] = useState(() => getStr('endAddress', ''));
-  const [rememberMap, setRememberMap] = useState(() => getBool('rememberMap', true));
-  const [stats, setStats] = useState<{travel:number; avg:number; stops:number; days:number} | null>(null);
+  const [avoidTolls, setAvoidTolls] = useState(() =>
+    getBool("avoidTolls", false),
+  );
+  const [avoidFerries, setAvoidFerries] = useState(() =>
+    getBool("avoidFerries", false),
+  );
+  const [avoidHighways, setAvoidHighways] = useState(() =>
+    getBool("avoidHighways", false),
+  );
+  const [maxStopsPerDay, setMaxStopsPerDay] = useState(() =>
+    getNum("maxStopsPerDay", 5),
+  );
+  const [defaultServiceTime, setDefaultServiceTime] = useState(() =>
+    getNum("defaultServiceTime", 60),
+  );
+  const [timeBuffer, setTimeBuffer] = useState(() => getNum("timeBuffer", 5));
+  const [returnToStart, setReturnToStart] = useState(() =>
+    getBool("returnToStart", true),
+  );
+  const [endAddress, setEndAddress] = useState(() => getStr("endAddress", ""));
+  const [rememberMap, setRememberMap] = useState(() =>
+    getBool("rememberMap", true),
+  );
+  const [stats, setStats] = useState<{
+    travel: number;
+    avg: number;
+    stops: number;
+    days: number;
+  } | null>(null);
   const [shouldRecalc, setShouldRecalc] = useState(false);
   const stopsCountRef = useRef(0);
   const [currentTab, setCurrentTab] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('currentTab') ?? 'run';
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("currentTab") ?? "run";
     }
-    return 'run';
+    return "run";
   });
   const [tableHeight, setTableHeight] = useState<number>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = Number(localStorage.getItem('tableHeight'));
+    if (typeof window !== "undefined") {
+      const saved = Number(localStorage.getItem("tableHeight"));
       return saved || 300;
     }
     return 300;
   });
   const containerRef = useRef<HTMLDivElement>(null);
-  const [mapState, setMapState] = useState<{center: google.maps.LatLngLiteral | null; zoom: number | null}>(() => {
-    if (typeof window === 'undefined') return { center: null, zoom: null };
-    if (!getBool('rememberMap', true)) return { center: null, zoom: null };
-    const center = localStorage.getItem('mapCenter');
-    const zoom = localStorage.getItem('mapZoom');
+  const [mapState, setMapState] = useState<{
+    center: google.maps.LatLngLiteral | null;
+    zoom: number | null;
+  }>(() => {
+    if (typeof window === "undefined") return { center: null, zoom: null };
+    if (!getBool("rememberMap", true)) return { center: null, zoom: null };
+    const center = localStorage.getItem("mapCenter");
+    const zoom = localStorage.getItem("mapZoom");
     return {
       center: center ? JSON.parse(center) : null,
       zoom: zoom ? Number(zoom) : null,
     };
   });
-  const isDesktop = useMediaQuery('(min-width: 768px)');
-  const isMapVisible = isDesktop || currentTab === 'map';
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const isMapVisible = isDesktop || currentTab === "map";
 
   const MAX_STOPS = 20;
 
   const cleanLines = (text: string) =>
     text
-      .split('\n')
+      .split("\n")
       .map((l) => l.trim())
-      .filter((l) => l !== '');
+      .filter((l) => l !== "");
 
   const updateBulkAddresses = (text: string) => {
     const lines = cleanLines(text);
     if (lines.length > MAX_STOPS) {
       alert(`Maximum ${MAX_STOPS} stops allowed`);
     }
-    setBulkAddresses(lines.slice(0, MAX_STOPS).join('\n'));
+    setBulkAddresses(lines.slice(0, MAX_STOPS).join("\n"));
   };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('tableHeight', String(tableHeight));
+    if (typeof window !== "undefined") {
+      localStorage.setItem("tableHeight", String(tableHeight));
     }
   }, [tableHeight]);
 
   useEffect(() => {
     if (rememberMap && mapState.center && mapState.zoom != null) {
-      localStorage.setItem('mapCenter', JSON.stringify(mapState.center));
-      localStorage.setItem('mapZoom', String(mapState.zoom));
+      localStorage.setItem("mapCenter", JSON.stringify(mapState.center));
+      localStorage.setItem("mapZoom", String(mapState.zoom));
     }
   }, [mapState, rememberMap]);
 
   useEffect(() => {
-    localStorage.setItem('avoidTolls', String(avoidTolls));
+    localStorage.setItem("avoidTolls", String(avoidTolls));
   }, [avoidTolls]);
 
   useEffect(() => {
-    localStorage.setItem('avoidFerries', String(avoidFerries));
+    localStorage.setItem("avoidFerries", String(avoidFerries));
   }, [avoidFerries]);
 
   useEffect(() => {
-    localStorage.setItem('avoidHighways', String(avoidHighways));
+    localStorage.setItem("avoidHighways", String(avoidHighways));
   }, [avoidHighways]);
 
   useEffect(() => {
-    localStorage.setItem('maxStopsPerDay', String(maxStopsPerDay));
+    localStorage.setItem("maxStopsPerDay", String(maxStopsPerDay));
   }, [maxStopsPerDay]);
 
   useEffect(() => {
-    localStorage.setItem('defaultServiceTime', String(defaultServiceTime));
+    localStorage.setItem("defaultServiceTime", String(defaultServiceTime));
   }, [defaultServiceTime]);
 
   useEffect(() => {
-    localStorage.setItem('timeBuffer', String(timeBuffer));
+    localStorage.setItem("timeBuffer", String(timeBuffer));
   }, [timeBuffer]);
 
   useEffect(() => {
-    localStorage.setItem('returnToStart', String(returnToStart));
+    localStorage.setItem("returnToStart", String(returnToStart));
   }, [returnToStart]);
 
   useEffect(() => {
-    localStorage.setItem('endAddress', endAddress);
+    localStorage.setItem("endAddress", endAddress);
   }, [endAddress]);
 
   useEffect(() => {
-    localStorage.setItem('rememberMap', String(rememberMap));
+    localStorage.setItem("rememberMap", String(rememberMap));
   }, [rememberMap]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('currentTab', currentTab);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("currentTab", currentTab);
     }
   }, [currentTab]);
 
   useEffect(() => {
-    if (isDesktop && currentTab === 'map') {
-      setCurrentTab('run');
+    if (isDesktop && currentTab === "map") {
+      setCurrentTab("run");
     }
   }, [isDesktop]);
 
@@ -189,15 +212,17 @@ export default function Page() {
   const stopsWithTimes = timedStops;
 
   useEffect(() => {
-    const saved = typeof window !== 'undefined' ? localStorage.getItem('startAddress') : null;
+    const saved =
+      typeof window !== "undefined"
+        ? localStorage.getItem("startAddress")
+        : null;
     if (saved) setStartAddress(saved);
   }, []);
 
-
   const updateStartAddress = (val: string) => {
     setStartAddress(val);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('startAddress', val);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("startAddress", val);
     }
   };
 
@@ -205,15 +230,15 @@ export default function Page() {
     if (!address.trim()) return;
     const newline = bulkAddresses ? `\n${address}` : address;
     updateBulkAddresses(bulkAddresses + newline);
-    setAddress('');
+    setAddress("");
   };
 
   const startResize = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
-    const startY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const startY = "touches" in e ? e.touches[0].clientY : e.clientY;
     const startHeight = tableHeight;
     const move = (ev: any) => {
-      const y = 'touches' in ev ? ev.touches[0].clientY : ev.clientY;
+      const y = "touches" in ev ? ev.touches[0].clientY : ev.clientY;
       const delta = y - startY;
       const container = containerRef.current;
       if (!container) return;
@@ -225,15 +250,15 @@ export default function Page() {
       setTableHeight(newHeight);
     };
     const stop = () => {
-      document.removeEventListener('mousemove', move);
-      document.removeEventListener('mouseup', stop);
-      document.removeEventListener('touchmove', move);
-      document.removeEventListener('touchend', stop);
+      document.removeEventListener("mousemove", move);
+      document.removeEventListener("mouseup", stop);
+      document.removeEventListener("touchmove", move);
+      document.removeEventListener("touchend", stop);
     };
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', stop);
-    document.addEventListener('touchmove', move);
-    document.addEventListener('touchend', stop);
+    document.addEventListener("mousemove", move);
+    document.addEventListener("mouseup", stop);
+    document.addEventListener("touchmove", move);
+    document.addEventListener("touchend", stop);
   };
 
   const onDragStart = (id: string) => setDragging(id);
@@ -251,7 +276,10 @@ export default function Page() {
     setDragging(null);
   };
 
-  const onHoverRow = useCallback((idx: number | null) => setHoveredIdx(idx), []);
+  const onHoverRow = useCallback(
+    (idx: number | null) => setHoveredIdx(idx),
+    [],
+  );
 
   const onSelectRow = useCallback((idx: number) => {
     setSelectedIdx(idx);
@@ -263,7 +291,7 @@ export default function Page() {
     recalcRoute(updated);
   };
 
-const remove = (id: string) => {
+  const remove = (id: string) => {
     const updated = stops.filter((s) => s.id !== id);
     setStops(updated);
     if (updated.length === 0) {
@@ -277,19 +305,22 @@ const remove = (id: string) => {
     }
   };
 
-
   const applyTimes = useCallback(
     (currStops: Stop[], legs: google.maps.DirectionsLeg[]) => {
       let current = DateTime.fromISO(`${startDate}T${startTime}`);
-      const [eodHour, eodMinute] = eodTime.split(':').map((n) => parseInt(n, 10));
-      const [startHour, startMinute] = startTime.split(':').map((n) => parseInt(n, 10));
+      const [eodHour, eodMinute] = eodTime
+        .split(":")
+        .map((n) => parseInt(n, 10));
+      const [startHour, startMinute] = startTime
+        .split(":")
+        .map((n) => parseInt(n, 10));
       let day = 1;
       let travel = 0;
       const result: Stop[] = [];
       let dayEnd = current.set({ hour: eodHour, minute: eodMinute });
 
       result.push({
-        id: 'start',
+        id: "start",
         address: startAddress,
         time: 0,
         eta: formatTime(current),
@@ -322,7 +353,9 @@ const remove = (id: string) => {
 
         if (etd > dayEnd) {
           const overEta = etd;
-          const nextStart = overEta.plus({ days: 1 }).set({ hour: startHour, minute: startMinute });
+          const nextStart = overEta
+            .plus({ days: 1 })
+            .set({ hour: startHour, minute: startMinute });
           if (isOvernight && accomodation.trim()) {
             result.push({
               id: `accom-${day}`,
@@ -350,7 +383,7 @@ const remove = (id: string) => {
       }
 
       result.push({
-        id: 'end',
+        id: "end",
         address: returnToStart ? startAddress : endAddress || startAddress,
         time: 0,
         eta: formatTime(current),
@@ -378,39 +411,57 @@ const remove = (id: string) => {
             i > 0 &&
             arr[i - 1].isStart &&
             arr[i - 1].day === s.day
-          )
+          ),
       );
     },
-    [startAddress, startDate, startTime, eodTime, accomodation, isOvernight, timeBuffer, returnToStart, endAddress]
+    [
+      startAddress,
+      startDate,
+      startTime,
+      eodTime,
+      accomodation,
+      isOvernight,
+      timeBuffer,
+      returnToStart,
+      endAddress,
+    ],
   );
 
-  const recalcRoute = useCallback((currStops: Stop[]) => {
-    if (!window.google || !startAddress) return;
-    const svc = new window.google.maps.DirectionsService();
-    setDirections(null);
-    svc.route(
-      {
-        origin: startAddress,
-        destination: returnToStart ? startAddress : endAddress || startAddress,
-        travelMode: window.google.maps.TravelMode.DRIVING,
-        avoidTolls,
-        avoidFerries,
-        avoidHighways,
-        optimizeWaypoints: false,
-        waypoints: currStops.map((s) => ({ location: s.address, stopover: true })),
-      },
-      (res: google.maps.DirectionsResult, status: string) => {
-        if (status !== 'OK' || !res.routes || !res.routes[0]) {
-          console.error('Route recalculation failed:', status, res);
-          return;
-        }
-        const legs = res.routes[0].legs;
-        const updated = applyTimes(currStops, legs);
-        setTimedStops(updated);
-        setDirections(res);
-      }
-    );
-  }, [startAddress, applyTimes]);
+  const recalcRoute = useCallback(
+    (currStops: Stop[]) => {
+      if (!window.google || !startAddress) return;
+      const svc = new window.google.maps.DirectionsService();
+      setDirections(null);
+      svc.route(
+        {
+          origin: startAddress,
+          destination: returnToStart
+            ? startAddress
+            : endAddress || startAddress,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+          avoidTolls,
+          avoidFerries,
+          avoidHighways,
+          optimizeWaypoints: false,
+          waypoints: currStops.map((s) => ({
+            location: s.address,
+            stopover: true,
+          })),
+        },
+        (res: google.maps.DirectionsResult, status: string) => {
+          if (status !== "OK" || !res.routes || !res.routes[0]) {
+            console.error("Route recalculation failed:", status, res);
+            return;
+          }
+          const legs = res.routes[0].legs;
+          const updated = applyTimes(currStops, legs);
+          setTimedStops(updated);
+          setDirections(res);
+        },
+      );
+    },
+    [startAddress, applyTimes],
+  );
 
   useEffect(() => {
     if (shouldRecalc && stops.length > 0) {
@@ -426,10 +477,14 @@ const remove = (id: string) => {
   const generateRoute = () => {
     const addrs = cleanLines(bulkAddresses);
     if (addrs.length === 0 || !startAddress.trim()) {
-      alert('Please provide an address first');
+      alert("Please provide an address first");
       return;
     }
-    const baseStops = addrs.map(addr => ({ id: Date.now().toString() + Math.random(), address: addr, time: defaultServiceTime }));
+    const baseStops = addrs.map((addr) => ({
+      id: Date.now().toString() + Math.random(),
+      address: addr,
+      time: defaultServiceTime,
+    }));
     setStops(baseStops);
     if (!window.google) return;
     const svc = new window.google.maps.DirectionsService();
@@ -443,19 +498,22 @@ const remove = (id: string) => {
         avoidFerries,
         avoidHighways,
         optimizeWaypoints: true,
-        waypoints: baseStops.map(s => ({ location: s.address, stopover: true }))
+        waypoints: baseStops.map((s) => ({
+          location: s.address,
+          stopover: true,
+        })),
       },
       (res: google.maps.DirectionsResult, status: string) => {
-        if (status !== 'OK' || !res.routes || !res.routes[0]) {
-          console.error('Route calculation failed:', status, res);
-          alert('Failed to generate route. Please check addresses.');
+        if (status !== "OK" || !res.routes || !res.routes[0]) {
+          console.error("Route calculation failed:", status, res);
+          alert("Failed to generate route. Please check addresses.");
           return;
         }
         const order = res.routes[0].waypoint_order;
         const ordered = order.map((i: number) => baseStops[i]);
         setStops(ordered);
         recalcRoute(ordered);
-      }
+      },
     );
   };
 
@@ -463,19 +521,19 @@ const remove = (id: string) => {
     if (!window.grecaptcha) return;
     const token = await window.grecaptcha.execute(
       process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!,
-      { action: 'share' }
+      { action: "share" },
     );
-    const verify = await fetch('/api/verify-captcha', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const verify = await fetch("/api/verify-captcha", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token }),
-    }).then(r => r.json());
+    }).then((r) => r.json());
     if (!verify.success) {
-      alert('reCAPTCHA failed');
+      alert("reCAPTCHA failed");
       return;
     }
     const data = JSON.stringify(stops);
-    const enc = await encrypt(data, 'demo');
+    const enc = await encrypt(data, "demo");
     setShareUrl(`${window.location.origin}?d=${encodeURIComponent(enc)}`);
   };
 
@@ -493,8 +551,8 @@ const remove = (id: string) => {
         onHover={onHoverRow}
         onSelect={(idx) => {
           onSelectRow(idx);
-          if (typeof window !== 'undefined' && window.innerWidth < 768) {
-            setCurrentTab('map');
+          if (typeof window !== "undefined" && window.innerWidth < 768) {
+            setCurrentTab("map");
           }
         }}
       />
@@ -509,23 +567,30 @@ const remove = (id: string) => {
           {`Number of days: ${stats.days}`}
         </div>
       )}
+    </>
+  );
+
+  const runActions = (
+    <div className="sticky bottom-0 left-0 right-0 p-4 bg-background z-10 shadow-md">
       <button
         onClick={generateRoute}
-        className="w-full bg-blue-500 text-white py-2 rounded mt-4"
+        className="w-full bg-blue-500 text-white py-2 rounded"
       >
         Generate Run
       </button>
       {stops.length > 0 && (
         <ShareModal url={shareUrl} onShare={generateShare} />
       )}
-    </>
+    </div>
   );
 
   const addressFields = (
     <div className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex flex-col w-full">
-          <label htmlFor="start-address" className="mb-1">Start Address</label>
+          <label htmlFor="start-address" className="mb-1">
+            Start Address
+          </label>
           <AddressInput
             id="start-address"
             value={startAddress}
@@ -534,7 +599,12 @@ const remove = (id: string) => {
           />
         </div>
         <div className="flex gap-2 w-full items-end">
-          <AddressInput id="add-address" value={address} onChange={setAddress} placeholder="Add address" />
+          <AddressInput
+            id="add-address"
+            value={address}
+            onChange={setAddress}
+            placeholder="Add address"
+          />
           <button
             onClick={addAddressLine}
             className="h-10 px-4 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
@@ -555,25 +625,35 @@ const remove = (id: string) => {
   );
 
   const runContent = (
-    <div ref={containerRef} className="flex flex-col h-full">
-      <div
-        className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b md:border-r border-gray-200 dark:border-gray-700"
-        style={isDesktop ? { height: tableHeight, minHeight: 150, maxHeight: '80vh' } : {}}
-      >
-        {addressFields}
-      </div>
-      {isDesktop && (
+    <div
+      ref={containerRef}
+      className="flex flex-col h-full min-h-[calc(100vh-8rem)]"
+    >
+      <div className="flex flex-col flex-1 overflow-y-auto">
         <div
-          onMouseDown={startResize}
-          onTouchStart={startResize}
-          className="h-3 bg-gray-600 cursor-row-resize touch-none"
-        />
-      )}
-      <div className="flex-1 overflow-y-auto scroll-touch p-4">{tableContent}</div>
+          className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b md:border-r border-gray-200 dark:border-gray-700"
+          style={
+            isDesktop
+              ? { height: tableHeight, minHeight: 150, maxHeight: "80vh" }
+              : {}
+          }
+        >
+          {addressFields}
+        </div>
+        {isDesktop && (
+          <div
+            onMouseDown={startResize}
+            onTouchStart={startResize}
+            className="h-3 bg-gray-600 cursor-row-resize touch-none"
+          />
+        )}
+        <div className="flex-1 overflow-y-auto scroll-touch p-4 pb-24">
+          {tableContent}
+        </div>
+      </div>
+      {runActions}
     </div>
   );
-
-
 
   const settingsContent = (
     <div className="flex flex-col overflow-y-auto scroll-touch flex-1 px-4 md:px-8 py-4 space-y-4">
@@ -581,7 +661,9 @@ const remove = (id: string) => {
         <h3 className="text-md font-semibold text-gray-300">Schedule</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex flex-col">
-            <label htmlFor="start-date" className="mb-1">Date</label>
+            <label htmlFor="start-date" className="mb-1">
+              Date
+            </label>
             <input
               id="start-date"
               type="date"
@@ -591,7 +673,9 @@ const remove = (id: string) => {
             />
           </div>
           <div className="flex flex-col">
-            <label htmlFor="start-time" className="mb-1">Start Time</label>
+            <label htmlFor="start-time" className="mb-1">
+              Start Time
+            </label>
             <input
               id="start-time"
               type="time"
@@ -601,7 +685,9 @@ const remove = (id: string) => {
             />
           </div>
           <div className="flex flex-col">
-            <label htmlFor="end-time" className="mb-1">End Time</label>
+            <label htmlFor="end-time" className="mb-1">
+              End Time
+            </label>
             <input
               id="end-time"
               type="time"
@@ -627,7 +713,12 @@ const remove = (id: string) => {
             Return to start?
           </label>
           {!returnToStart && (
-            <AddressInput id="end-address" value={endAddress} onChange={setEndAddress} placeholder="End Address" />
+            <AddressInput
+              id="end-address"
+              value={endAddress}
+              onChange={setEndAddress}
+              placeholder="End Address"
+            />
           )}
           <label className="flex items-center">
             <input
@@ -660,7 +751,9 @@ const remove = (id: string) => {
             Avoid Highways
           </label>
           <div className="flex flex-col">
-            <label htmlFor="max-stops" className="mb-1">Max Stops per Day</label>
+            <label htmlFor="max-stops" className="mb-1">
+              Max Stops per Day
+            </label>
             <input
               id="max-stops"
               type="number"
@@ -670,7 +763,9 @@ const remove = (id: string) => {
             />
           </div>
           <div className="flex flex-col">
-            <label htmlFor="time-buffer" className="mb-1">Time Buffer Between Stops (mins)</label>
+            <label htmlFor="time-buffer" className="mb-1">
+              Time Buffer Between Stops (mins)
+            </label>
             <input
               id="time-buffer"
               type="number"
@@ -690,7 +785,12 @@ const remove = (id: string) => {
             Overnight stop
           </label>
           {isOvernight && (
-            <AddressInput id="accom" value={accomodation} onChange={setAccomodation} placeholder="Accomodation address" />
+            <AddressInput
+              id="accom"
+              value={accomodation}
+              onChange={setAccomodation}
+              placeholder="Accomodation address"
+            />
           )}
         </div>
       </div>
@@ -698,12 +798,16 @@ const remove = (id: string) => {
       <div className="space-y-2">
         <h3 className="text-md font-semibold text-gray-300">Defaults</h3>
         <div className="flex flex-col gap-2">
-          <label htmlFor="default-service" className="mb-1">Default Service Time (mins)</label>
+          <label htmlFor="default-service" className="mb-1">
+            Default Service Time (mins)
+          </label>
           <input
             id="default-service"
             type="number"
             value={defaultServiceTime}
-            onChange={(e) => setDefaultServiceTime(parseInt(e.target.value) || 0)}
+            onChange={(e) =>
+              setDefaultServiceTime(parseInt(e.target.value) || 0)
+            }
             className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
           />
         </div>
@@ -740,13 +844,15 @@ const remove = (id: string) => {
   );
 
   const tabItems = useMemo(() => {
-    const items = [
-      { key: 'run', title: 'Run', content: runContent },
-    ];
+    const items = [{ key: "run", title: "Run", content: runContent }];
     if (!isDesktop) {
-      items.push({ key: 'map', title: 'Map', content: mapTabContent });
+      items.push({ key: "map", title: "Map", content: mapTabContent });
     }
-    items.push({ key: 'settings', title: 'Settings', content: settingsContent });
+    items.push({
+      key: "settings",
+      title: "Settings",
+      content: settingsContent,
+    });
     return items;
   }, [runContent, settingsContent, mapTabContent, isDesktop]);
 
@@ -777,7 +883,9 @@ const remove = (id: string) => {
           </div>
         )}
       </div>
-      <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
+      <Script
+        src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`}
+      />
     </div>
   );
 }
