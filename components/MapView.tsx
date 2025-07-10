@@ -1,6 +1,8 @@
 'use client';
 import { useEffect, useRef, useMemo } from 'react';
-import { useLoadScript } from '@react-google-maps/api';
+import { useLoadScript, type Libraries } from '@react-google-maps/api';
+
+const GOOGLE_MAPS_LIBRARIES: Libraries = ['places'];
 
 function getDefaultMarkerIcon(): google.maps.Icon | undefined {
   if (typeof window !== 'undefined' && window.google?.maps) {
@@ -59,7 +61,7 @@ export default function MapView({
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-    libraries: ['places'],
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
 
