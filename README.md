@@ -47,3 +47,7 @@ npm run dev
 ```
 
 API endpoints are available under `/api/run` for creating and managing route runs.
+
+## User Registration
+
+A registration page is available at `/register`. The form validates input on both the client and server. User passwords are hashed with `bcryptjs` before being saved to the database via Prisma.
