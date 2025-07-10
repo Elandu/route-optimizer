@@ -260,7 +260,15 @@ export default function Page() {
 const remove = (id: string) => {
     const updated = stops.filter((s) => s.id !== id);
     setStops(updated);
-    recalcRoute(updated);
+    if (updated.length === 0) {
+      setTimedStops([]);
+      setDirections(null);
+      setStats(null);
+      setSelectedIdx(null);
+      setHoveredIdx(null);
+    } else {
+      recalcRoute(updated);
+    }
   };
 
 
