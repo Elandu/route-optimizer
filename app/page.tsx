@@ -78,7 +78,12 @@ export default function Page() {
   const [stats, setStats] = useState<{travel:number; avg:number; stops:number; days:number} | null>(null);
   const [shouldRecalc, setShouldRecalc] = useState(false);
   const stopsCountRef = useRef(0);
-  const [currentTab, setCurrentTab] = useState('run');
+  const [currentTab, setCurrentTab] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('currentTab') ?? 'run';
+    }
+    return 'run';
+  });
   const [tableHeight, setTableHeight] = useState<number>(() => {
     if (typeof window !== 'undefined') {
       const saved = Number(localStorage.getItem('tableHeight'));
@@ -164,6 +169,12 @@ export default function Page() {
   useEffect(() => {
     localStorage.setItem('rememberMap', String(rememberMap));
   }, [rememberMap]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('currentTab', currentTab);
+    }
+  }, [currentTab]);
 
   useEffect(() => {
     stopsCountRef.current = stops.length;
@@ -499,7 +510,7 @@ const remove = (id: string) => {
   const runContent = (
     <div ref={containerRef} className="flex flex-col h-full">
       <div
-        className="flex flex-col gap-4 p-4 overflow-y-auto scroll-touch border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700"
+        className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700"
         style={{ height: tableHeight, minHeight: 150, maxHeight: '80vh' }}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -510,13 +521,14 @@ const remove = (id: string) => {
               value={startAddress}
               onChange={updateStartAddress}
               placeholder="Start address"
+              className="h-10"
             />
           </div>
-          <div className="flex gap-2 w-full">
-            <AddressInput id="add-address" value={address} onChange={setAddress} placeholder="Add address" />
+          <div className="flex gap-2 w-full items-end">
+            <AddressInput id="add-address" value={address} onChange={setAddress} placeholder="Add address" className="h-10" />
             <button
               onClick={addAddressLine}
-              className="px-4 py-2 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
+              className="h-10 px-4 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
             >
               Add
             </button>
@@ -578,23 +590,23 @@ const remove = (id: string) => {
             />
           </div>
         </div>
-        <label className="flex items-center">
-          <input
-            id="overnight"
-            type="checkbox"
-            checked={isOvernight}
-            onChange={(e) => setIsOvernight(e.target.checked)}
-            className="mr-2"
-          />
-          Overnight stop
-        </label>
-        {isOvernight && (
-          <AddressInput id="accom" value={accomodation} onChange={setAccomodation} placeholder="Accomodation address" />
-        )}
       </div>
 
       <h3 className="text-md font-semibold text-gray-300 mt-4 mb-2">Route Options</h3>
       <div className="flex flex-col gap-2">
+        <label className="flex items-center">
+          <input
+            id="return-start"
+            type="checkbox"
+            checked={returnToStart}
+            onChange={(e) => setReturnToStart(e.target.checked)}
+            className="mr-2"
+          />
+          Return to start?
+        </label>
+        {!returnToStart && (
+          <AddressInput id="end-address" value={endAddress} onChange={setEndAddress} placeholder="End Address" />
+        )}
         <label className="flex items-center">
           <input
             id="avoid-tolls"
@@ -625,19 +637,6 @@ const remove = (id: string) => {
           />
           Avoid Highways
         </label>
-        <label className="flex items-center">
-          <input
-            id="return-start"
-            type="checkbox"
-            checked={returnToStart}
-            onChange={(e) => setReturnToStart(e.target.checked)}
-            className="mr-2"
-          />
-          Return to start?
-        </label>
-        {!returnToStart && (
-          <AddressInput id="end-address" value={endAddress} onChange={setEndAddress} placeholder="End Address" />
-        )}
         <div className="flex flex-col">
           <label htmlFor="max-stops" className="mb-1">Max Stops per Day</label>
           <input
@@ -658,6 +657,19 @@ const remove = (id: string) => {
             className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
           />
         </div>
+        <label className="flex items-center">
+          <input
+            id="overnight"
+            type="checkbox"
+            checked={isOvernight}
+            onChange={(e) => setIsOvernight(e.target.checked)}
+            className="mr-2"
+          />
+          Overnight stop
+        </label>
+        {isOvernight && (
+          <AddressInput id="accom" value={accomodation} onChange={setAccomodation} placeholder="Accomodation address" />
+        )}
       </div>
 
       <h3 className="text-md font-semibold text-gray-300 mt-4 mb-2">Defaults</h3>
