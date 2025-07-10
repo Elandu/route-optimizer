@@ -103,7 +103,7 @@ export default function Page() {
     };
   });
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const isMapVisible = isDesktop ? currentTab !== 'settings' : currentTab === 'map';
+  const isMapVisible = isDesktop || currentTab === 'map';
 
   const MAX_STOPS = 20;
 
@@ -175,6 +175,12 @@ export default function Page() {
       localStorage.setItem('currentTab', currentTab);
     }
   }, [currentTab]);
+
+  useEffect(() => {
+    if (isDesktop && currentTab === 'map') {
+      setCurrentTab('run');
+    }
+  }, [isDesktop]);
 
   useEffect(() => {
     stopsCountRef.current = stops.length;
@@ -525,11 +531,10 @@ const remove = (id: string) => {
             value={startAddress}
             onChange={updateStartAddress}
             placeholder="Start address"
-            className="h-10"
           />
         </div>
         <div className="flex gap-2 w-full items-end">
-          <AddressInput id="add-address" value={address} onChange={setAddress} placeholder="Add address" className="h-10" />
+          <AddressInput id="add-address" value={address} onChange={setAddress} placeholder="Add address" />
           <button
             onClick={addAddressLine}
             className="h-10 px-4 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
@@ -564,16 +569,17 @@ const remove = (id: string) => {
           className="h-3 bg-gray-600 cursor-row-resize touch-none"
         />
       )}
-      <div className="flex-1 overflow-auto scroll-touch p-4">{tableContent}</div>
+      <div className="flex-1 overflow-y-auto scroll-touch p-4">{tableContent}</div>
     </div>
   );
 
 
+
   const settingsContent = (
-    <div className="flex flex-col overflow-y-auto scroll-touch flex-1 px-4 md:px-8 py-4 gap-2">
-      <h3 className="text-md font-semibold text-gray-300 mb-2">Schedule</h3>
-      <div className="flex flex-col gap-2">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+    <div className="flex flex-col overflow-y-auto scroll-touch flex-1 px-4 md:px-8 py-4 space-y-4">
+      <div className="space-y-2">
+        <h3 className="text-md font-semibold text-gray-300">Schedule</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="flex flex-col">
             <label htmlFor="start-date" className="mb-1">Date</label>
             <input
@@ -607,113 +613,118 @@ const remove = (id: string) => {
         </div>
       </div>
 
-      <h3 className="text-md font-semibold text-gray-300 mt-4 mb-2">Route Options</h3>
-      <div className="flex flex-col gap-2">
-        <label className="flex items-center">
+      <div className="space-y-2">
+        <h3 className="text-md font-semibold text-gray-300">Route Options</h3>
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center">
+            <input
+              id="return-start"
+              type="checkbox"
+              checked={returnToStart}
+              onChange={(e) => setReturnToStart(e.target.checked)}
+              className="mr-2"
+            />
+            Return to start?
+          </label>
+          {!returnToStart && (
+            <AddressInput id="end-address" value={endAddress} onChange={setEndAddress} placeholder="End Address" />
+          )}
+          <label className="flex items-center">
+            <input
+              id="avoid-tolls"
+              type="checkbox"
+              checked={avoidTolls}
+              onChange={(e) => setAvoidTolls(e.target.checked)}
+              className="mr-2"
+            />
+            Avoid Tolls
+          </label>
+          <label className="flex items-center">
+            <input
+              id="avoid-ferries"
+              type="checkbox"
+              checked={avoidFerries}
+              onChange={(e) => setAvoidFerries(e.target.checked)}
+              className="mr-2"
+            />
+            Avoid Ferries
+          </label>
+          <label className="flex items-center">
+            <input
+              id="avoid-highways"
+              type="checkbox"
+              checked={avoidHighways}
+              onChange={(e) => setAvoidHighways(e.target.checked)}
+              className="mr-2"
+            />
+            Avoid Highways
+          </label>
+          <div className="flex flex-col">
+            <label htmlFor="max-stops" className="mb-1">Max Stops per Day</label>
+            <input
+              id="max-stops"
+              type="number"
+              value={maxStopsPerDay}
+              onChange={(e) => setMaxStopsPerDay(parseInt(e.target.value) || 0)}
+              className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <div className="flex flex-col">
+            <label htmlFor="time-buffer" className="mb-1">Time Buffer Between Stops (mins)</label>
+            <input
+              id="time-buffer"
+              type="number"
+              value={timeBuffer}
+              onChange={(e) => setTimeBuffer(parseInt(e.target.value) || 0)}
+              className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
+            />
+          </div>
+          <label className="flex items-center">
+            <input
+              id="overnight"
+              type="checkbox"
+              checked={isOvernight}
+              onChange={(e) => setIsOvernight(e.target.checked)}
+              className="mr-2"
+            />
+            Overnight stop
+          </label>
+          {isOvernight && (
+            <AddressInput id="accom" value={accomodation} onChange={setAccomodation} placeholder="Accomodation address" />
+          )}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="text-md font-semibold text-gray-300">Defaults</h3>
+        <div className="flex flex-col gap-2">
+          <label htmlFor="default-service" className="mb-1">Default Service Time (mins)</label>
           <input
-            id="return-start"
-            type="checkbox"
-            checked={returnToStart}
-            onChange={(e) => setReturnToStart(e.target.checked)}
-            className="mr-2"
-          />
-          Return to start?
-        </label>
-        {!returnToStart && (
-          <AddressInput id="end-address" value={endAddress} onChange={setEndAddress} placeholder="End Address" />
-        )}
-        <label className="flex items-center">
-          <input
-            id="avoid-tolls"
-            type="checkbox"
-            checked={avoidTolls}
-            onChange={(e) => setAvoidTolls(e.target.checked)}
-            className="mr-2"
-          />
-          Avoid Tolls
-        </label>
-        <label className="flex items-center">
-          <input
-            id="avoid-ferries"
-            type="checkbox"
-            checked={avoidFerries}
-            onChange={(e) => setAvoidFerries(e.target.checked)}
-            className="mr-2"
-          />
-          Avoid Ferries
-        </label>
-        <label className="flex items-center">
-          <input
-            id="avoid-highways"
-            type="checkbox"
-            checked={avoidHighways}
-            onChange={(e) => setAvoidHighways(e.target.checked)}
-            className="mr-2"
-          />
-          Avoid Highways
-        </label>
-        <div className="flex flex-col">
-          <label htmlFor="max-stops" className="mb-1">Max Stops per Day</label>
-          <input
-            id="max-stops"
+            id="default-service"
             type="number"
-            value={maxStopsPerDay}
-            onChange={(e) => setMaxStopsPerDay(parseInt(e.target.value) || 0)}
+            value={defaultServiceTime}
+            onChange={(e) => setDefaultServiceTime(parseInt(e.target.value) || 0)}
             className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
           />
         </div>
-        <div className="flex flex-col">
-          <label htmlFor="time-buffer" className="mb-1">Time Buffer Between Stops (mins)</label>
-          <input
-            id="time-buffer"
-            type="number"
-            value={timeBuffer}
-            onChange={(e) => setTimeBuffer(parseInt(e.target.value) || 0)}
-            className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
-          />
-        </div>
+      </div>
+
+      <div className="space-y-2">
+        <h3 className="text-md font-semibold text-gray-300">Map</h3>
         <label className="flex items-center">
           <input
-            id="overnight"
+            id="remember-map"
             type="checkbox"
-            checked={isOvernight}
-            onChange={(e) => setIsOvernight(e.target.checked)}
+            checked={rememberMap}
+            onChange={(e) => setRememberMap(e.target.checked)}
             className="mr-2"
           />
-          Overnight stop
+          Remember last map position
         </label>
-        {isOvernight && (
-          <AddressInput id="accom" value={accomodation} onChange={setAccomodation} placeholder="Accomodation address" />
-        )}
       </div>
-
-      <h3 className="text-md font-semibold text-gray-300 mt-4 mb-2">Defaults</h3>
-      <div className="flex flex-col gap-2">
-        <label htmlFor="default-service" className="mb-1">Default Service Time (mins)</label>
-        <input
-          id="default-service"
-          type="number"
-          value={defaultServiceTime}
-          onChange={(e) => setDefaultServiceTime(parseInt(e.target.value) || 0)}
-          className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
-        />
-      </div>
-
-      <h3 className="text-md font-semibold text-gray-300 mt-4 mb-2">Map</h3>
-      <label className="flex items-center">
-        <input
-          id="remember-map"
-          type="checkbox"
-          checked={rememberMap}
-          onChange={(e) => setRememberMap(e.target.checked)}
-          className="mr-2"
-        />
-        Remember last map position
-      </label>
     </div>
   );
-
-  const mapTabContent = !isDesktop ? (
+  const mapTabContent = (
     <div className="h-[70vh] w-full overflow-y-auto">
       <MapView
         start={startAddress}
@@ -726,21 +737,24 @@ const remove = (id: string) => {
         onMapStateChange={setMapState}
       />
     </div>
-  ) : null;
+  );
 
   const tabItems = useMemo(() => {
-    return [
+    const items = [
       { key: 'run', title: 'Run', content: runContent },
-      { key: 'map', title: <span className="md:hidden">Map</span>, content: mapTabContent },
-      { key: 'settings', title: 'Settings', content: settingsContent },
     ];
-  }, [runContent, settingsContent, mapTabContent]);
+    if (!isDesktop) {
+      items.push({ key: 'map', title: 'Map', content: mapTabContent });
+    }
+    items.push({ key: 'settings', title: 'Settings', content: settingsContent });
+    return items;
+  }, [runContent, settingsContent, mapTabContent, isDesktop]);
 
   return (
     <div className="flex flex-col w-full max-w-full overflow-x-hidden min-h-screen">
       <AuthHeader />
-      <div className="flex flex-col md:flex-row flex-grow md:overflow-hidden gap-4 md:gap-0">
-        <div className="md:w-[40%] flex flex-col flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr] flex-grow md:overflow-hidden gap-4">
+        <div className="flex flex-col flex-1">
           <Tabs
             defaultKey="run"
             selectedKey={currentTab}
@@ -748,8 +762,8 @@ const remove = (id: string) => {
             items={tabItems}
           />
         </div>
-        {isDesktop && isMapVisible && (
-          <div className="md:w-[60%] h-screen w-full overflow-y-auto">
+        {isMapVisible && (
+          <div className="h-[60vh] md:h-full w-full overflow-y-auto">
             <MapView
               start={startAddress}
               stops={timedStops}
