@@ -647,8 +647,9 @@ export default function Page() {
   );
 
   const addressesContent = (
-    <div className="min-h-[calc(100vh-8rem)] overflow-y-auto">
+    <div className="flex flex-col min-h-[calc(100vh-8rem)] overflow-y-auto">
       {addressFields}
+      {!isDesktop && runActions}
     </div>
   );
 
