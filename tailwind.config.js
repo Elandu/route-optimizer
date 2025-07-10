@@ -4,7 +4,7 @@ const heroColors = heroUITheme.themes.light.colors;
 
 module.exports = {
   darkMode: 'class',
-  presets: [require('@heroui/tailwind-preset')],
+  // Use the HeroUI tailwind plugin to generate utilities
   content: [
     './app/**/*.{js,ts,jsx,tsx}',
     './components/**/*.{js,ts,jsx,tsx}',
@@ -15,5 +15,5 @@ module.exports = {
       colors: heroColors,
     },
   },
-  plugins: [],
+  plugins: [require('@heroui/theme').heroui(heroUITheme)],
 };
