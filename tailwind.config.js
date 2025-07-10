@@ -8,5 +8,9 @@ module.exports = {
   theme: {
     extend: {},
   },
-  plugins: [require('@heroui/theme').heroui()],
+  plugins: [
+    require('@heroui/theme').heroui(
+      require('./heroui.theme.js')
+    ),
+  ],
 };
