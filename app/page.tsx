@@ -131,7 +131,7 @@ export default function Page() {
     [],
   );
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const isMapVisible = isDesktop || currentTab === "map";
+  const isMapVisible = isDesktop;
 
   const MAX_STOPS = 20;
 
@@ -205,7 +205,7 @@ export default function Page() {
   }, [currentTab]);
 
   useEffect(() => {
-    if (isDesktop && currentTab === "map") {
+    if (isDesktop && (currentTab === "map" || currentTab === "addresses")) {
       setCurrentTab("run");
     }
   }, [isDesktop, currentTab]);
@@ -637,22 +637,26 @@ export default function Page() {
     </div>
   );
 
+  const addressesContent = (
+    <div className="min-h-[calc(100vh-8rem)] overflow-y-auto">
+      {addressFields}
+    </div>
+  );
+
   const runContent = (
     <div
       ref={containerRef}
       className="flex flex-col h-full min-h-[calc(100vh-8rem)]"
     >
       <div className="flex flex-col flex-1 overflow-y-auto">
-        <div
-          className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b md:border-r border-gray-200 dark:border-gray-700"
-          style={
-            isDesktop
-              ? { height: tableHeight, minHeight: 150, maxHeight: "80vh" }
-              : {}
-          }
-        >
-          {addressFields}
-        </div>
+        {isDesktop && (
+          <div
+            className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b md:border-r border-gray-200 dark:border-gray-700"
+            style={{ height: tableHeight, minHeight: 150, maxHeight: "80vh" }}
+          >
+            {addressFields}
+          </div>
+        )}
         {isDesktop && (
           <div
             onMouseDown={startResize}
@@ -669,7 +673,7 @@ export default function Page() {
   );
 
   const settingsContent = (
-    <div className="flex flex-col overflow-y-auto scroll-touch flex-1 px-4 md:px-8 py-4 space-y-4">
+    <div className="flex flex-col overflow-y-auto scroll-touch flex-1 px-4 md:px-8 py-4 space-y-4 min-h-[calc(100vh-8rem)]">
       <div className="space-y-2">
         <h3 className="text-md font-semibold text-gray-300">Schedule</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -858,6 +862,7 @@ export default function Page() {
 
   const tabItems = [
     { key: "run", title: "Run", content: runContent },
+    ...(!isDesktop ? [{ key: "addresses", title: "Addresses", content: addressesContent }] : []),
     ...(!isDesktop ? [{ key: "map", title: "Map", content: mapTabContent }] : []),
     { key: "settings", title: "Settings", content: settingsContent },
   ];

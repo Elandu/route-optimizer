@@ -77,8 +77,15 @@ export default function AuthModal({ open, onClose }: Props) {
   };
 
   return (
-    <Modal isOpen={open} onOpenChange={(o) => { if (!o) onClose(); }} placement="center">
-      <ModalContent className="space-y-4">
+    <Modal
+      isOpen={open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+      placement="center"
+      scrollBehavior="inside"
+    >
+      <ModalContent className="space-y-4 max-h-[90vh] overflow-y-auto">
         <ModalHeader>Account</ModalHeader>
         <ModalBody className="space-y-4">
           <Tab.Group selectedIndex={tab} onChange={setTab}>
