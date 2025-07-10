@@ -93,7 +93,7 @@ export default function MapView({
       });
     }
     init();
-  }, [isLoaded]);
+  }, [isLoaded, mapState?.center, mapState?.zoom, onMapStateChange]);
 
   useEffect(() => {
     if (!isLoaded || !window.google) return;
@@ -158,7 +158,16 @@ export default function MapView({
       gmap.current!.setCenter(center);
       gmap.current!.setZoom(zoom);
     }
-  }, [start, stops, defaultIcon, onSelect, isLoaded]);
+  }, [
+    start,
+    stops,
+    defaultIcon,
+    onSelect,
+    isLoaded,
+    mapState?.center,
+    mapState?.zoom,
+    onMapStateChange,
+  ]);
 
   useEffect(() => {
     if (!isLoaded || !window.google) return;
@@ -218,7 +227,7 @@ export default function MapView({
       gmap.current?.setCenter(center);
       gmap.current?.setZoom(zoom);
     }
-  }, [directions, isLoaded]);
+  }, [directions, isLoaded, mapState?.center, mapState?.zoom]);
 
   useEffect(() => {
     return () => {

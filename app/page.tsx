@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import AddressInput from "../components/AddressInput";
 import RunTable from "../components/RunTable";
 import ShareModal from "../components/ShareModal";
@@ -125,6 +125,11 @@ export default function Page() {
       zoom: zoom ? Number(zoom) : null,
     };
   });
+  const handleMapStateChange = useCallback(
+    (state: { center: google.maps.LatLngLiteral | null; zoom: number | null }) =>
+      setMapState(state),
+    [],
+  );
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const isMapVisible = isDesktop || currentTab === "map";
 
@@ -203,7 +208,7 @@ export default function Page() {
     if (isDesktop && currentTab === "map") {
       setCurrentTab("run");
     }
-  }, [isDesktop]);
+  }, [isDesktop, currentTab]);
 
   useEffect(() => {
     stopsCountRef.current = stops.length;
@@ -460,7 +465,15 @@ export default function Page() {
         },
       );
     },
-    [startAddress, applyTimes],
+    [
+      startAddress,
+      applyTimes,
+      avoidTolls,
+      avoidFerries,
+      avoidHighways,
+      returnToStart,
+      endAddress,
+    ],
   );
 
   useEffect(() => {
@@ -838,23 +851,16 @@ export default function Page() {
         selectedIndex={selectedIdx}
         onSelect={onSelectRow}
         mapState={mapState}
-        onMapStateChange={setMapState}
+        onMapStateChange={handleMapStateChange}
       />
     </div>
   );
 
-  const tabItems = useMemo(() => {
-    const items = [{ key: "run", title: "Run", content: runContent }];
-    if (!isDesktop) {
-      items.push({ key: "map", title: "Map", content: mapTabContent });
-    }
-    items.push({
-      key: "settings",
-      title: "Settings",
-      content: settingsContent,
-    });
-    return items;
-  }, [runContent, settingsContent, mapTabContent, isDesktop]);
+  const tabItems = [
+    { key: "run", title: "Run", content: runContent },
+    ...(!isDesktop ? [{ key: "map", title: "Map", content: mapTabContent }] : []),
+    { key: "settings", title: "Settings", content: settingsContent },
+  ];
 
   return (
     <div className="flex flex-col w-full max-w-full overflow-x-hidden min-h-screen">
@@ -878,7 +884,7 @@ export default function Page() {
               selectedIndex={selectedIdx}
               onSelect={onSelectRow}
               mapState={mapState}
-              onMapStateChange={setMapState}
+              onMapStateChange={handleMapStateChange}
             />
           </div>
         )}
