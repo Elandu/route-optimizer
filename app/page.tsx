@@ -103,7 +103,7 @@ export default function Page() {
     };
   });
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const isMapVisible = isDesktop || currentTab === 'map';
+  const isMapVisible = isDesktop ? currentTab !== 'settings' : currentTab === 'map';
 
   const MAX_STOPS = 20;
 
@@ -549,32 +549,25 @@ const remove = (id: string) => {
     </div>
   );
 
-  const runContent = isDesktop ? (
+  const runContent = (
     <div ref={containerRef} className="flex flex-col h-full">
       <div
-        className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700"
-        style={{ height: tableHeight, minHeight: 150, maxHeight: '80vh' }}
+        className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b md:border-r border-gray-200 dark:border-gray-700"
+        style={isDesktop ? { height: tableHeight, minHeight: 150, maxHeight: '80vh' } : {}}
       >
         {addressFields}
       </div>
-      <div
-        onMouseDown={startResize}
-        onTouchStart={startResize}
-        className="h-3 bg-gray-600 cursor-row-resize touch-none"
-      />
-      <div className="flex-1 overflow-auto scroll-touch p-4">
-        {tableContent}
-      </div>
-    </div>
-  ) : (
-    <div className="flex flex-col h-full">
+      {isDesktop && (
+        <div
+          onMouseDown={startResize}
+          onTouchStart={startResize}
+          className="h-3 bg-gray-600 cursor-row-resize touch-none"
+        />
+      )}
       <div className="flex-1 overflow-auto scroll-touch p-4">{tableContent}</div>
     </div>
   );
 
-  const addressesContent = isDesktop ? null : (
-    <div className="flex flex-col h-full overflow-y-auto">{addressFields}</div>
-  );
 
   const settingsContent = (
     <div className="flex flex-col overflow-y-auto scroll-touch flex-1 px-4 md:px-8 py-4 gap-2">
@@ -720,17 +713,28 @@ const remove = (id: string) => {
     </div>
   );
 
+  const mapTabContent = !isDesktop ? (
+    <div className="h-[70vh] w-full overflow-y-auto">
+      <MapView
+        start={startAddress}
+        stops={timedStops}
+        directions={directions}
+        hoveredIndex={hoveredIdx}
+        selectedIndex={selectedIdx}
+        onSelect={onSelectRow}
+        mapState={mapState}
+        onMapStateChange={setMapState}
+      />
+    </div>
+  ) : null;
+
   const tabItems = useMemo(() => {
-    const items: TabItem[] = [
+    return [
       { key: 'run', title: 'Run', content: runContent },
+      { key: 'map', title: <span className="md:hidden">Map</span>, content: mapTabContent },
       { key: 'settings', title: 'Settings', content: settingsContent },
     ];
-    if (!isDesktop) {
-      items.splice(1, 0, { key: 'addresses', title: 'Addresses', content: addressesContent });
-      items.splice(2, 0, { key: 'map', title: 'Map', content: null });
-    }
-    return items;
-  }, [runContent, addressesContent, settingsContent, isDesktop]);
+  }, [runContent, settingsContent, mapTabContent]);
 
   return (
     <div className="flex flex-col w-full max-w-full overflow-x-hidden min-h-screen">
@@ -744,8 +748,8 @@ const remove = (id: string) => {
             items={tabItems}
           />
         </div>
-        {isMapVisible && (
-          <div className={`${isDesktop ? 'md:w-[60%] h-screen' : 'h-[70vh]'} w-full overflow-y-auto`}>
+        {isDesktop && isMapVisible && (
+          <div className="md:w-[60%] h-screen w-full overflow-y-auto">
             <MapView
               start={startAddress}
               stops={timedStops}

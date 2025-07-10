@@ -1,6 +1,6 @@
 'use client';
+import { Tab } from '@headlessui/react';
 import { useEffect, useState } from 'react';
-import { Tabs as HeroTabs, Tab } from '@heroui/react';
 
 export interface TabItem {
   key: string;
@@ -23,7 +23,7 @@ export default function Tabs({
   onChange,
   storageKey = 'currentTab',
 }: TabsProps) {
-  const initial = () => {
+  const initKey = () => {
     if (selectedKey) return selectedKey;
     if (typeof window !== 'undefined') {
       return localStorage.getItem(storageKey) ?? defaultKey ?? items[0]?.key;
@@ -31,14 +31,17 @@ export default function Tabs({
     return defaultKey ?? items[0]?.key;
   };
 
-  const [activeKey, setActiveKey] = useState<string | undefined>(initial);
+  const [activeKey, setActiveKey] = useState(initKey);
 
   useEffect(() => {
     if (selectedKey) setActiveKey(selectedKey);
   }, [selectedKey]);
 
-  const change = (key: React.Key) => {
-    const val = String(key);
+  const index = items.findIndex((i) => i.key === activeKey);
+
+  const change = (idx: number) => {
+    const val = items[idx]?.key;
+    if (!val) return;
     setActiveKey(val);
     try {
       localStorage.setItem(storageKey, val);
@@ -47,16 +50,26 @@ export default function Tabs({
   };
 
   return (
-    <HeroTabs
-      selectedKey={activeKey}
-      onSelectionChange={change}
-      className="flex flex-col flex-1 overflow-hidden"
-    >
-      {items.map((item) => (
-        <Tab key={item.key} title={item.title}>
-          <div className="pt-4 flex flex-col flex-1 overflow-y-auto">{item.content}</div>
-        </Tab>
-      ))}
-    </HeroTabs>
+    <Tab.Group selectedIndex={index} onChange={change} as="div" className="flex flex-col flex-1 overflow-hidden">
+      <Tab.List className="flex space-x-2 border-b px-4">
+        {items.map((item) => (
+          <Tab
+            key={item.key}
+            className={({ selected }) =>
+              `px-3 py-2 text-sm focus:outline-none ${selected ? 'border-b-2 border-blue-500' : 'border-b-2 border-transparent'}`
+            }
+          >
+            {item.title}
+          </Tab>
+        ))}
+      </Tab.List>
+      <Tab.Panels className="flex-1 overflow-y-auto">
+        {items.map((item) => (
+          <Tab.Panel key={item.key} className="p-4 h-full">
+            {item.content}
+          </Tab.Panel>
+        ))}
+      </Tab.Panels>
+    </Tab.Group>
   );
 }
