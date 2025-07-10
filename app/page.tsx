@@ -127,7 +127,16 @@ export default function Page() {
   });
   const handleMapStateChange = useCallback(
     (state: { center: google.maps.LatLngLiteral | null; zoom: number | null }) =>
-      setMapState(state),
+      setMapState((prev) => {
+        if (
+          prev.center?.lat === state.center?.lat &&
+          prev.center?.lng === state.center?.lng &&
+          prev.zoom === state.zoom
+        ) {
+          return prev;
+        }
+        return state;
+      }),
     [],
   );
   const isDesktop = useMediaQuery("(min-width: 768px)");
