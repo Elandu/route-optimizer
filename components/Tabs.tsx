@@ -63,9 +63,9 @@ export default function Tabs({
           </Tab>
         ))}
       </Tab.List>
-      <Tab.Panels className="flex-1 overflow-y-auto">
+      <Tab.Panels className="flex-1 overflow-y-auto min-h-0">
         {items.map((item) => (
-          <Tab.Panel key={item.key} className="p-4 h-full overflow-y-auto">
+          <Tab.Panel key={item.key} className="p-4 h-full overflow-y-auto min-h-0">
             {item.content}
           </Tab.Panel>
         ))}
