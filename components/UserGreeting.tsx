@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import AuthModal from './AuthModal';
 import { useUser } from '@/UserContext';
+import { Button } from '@heroui/react';
 
 export default function UserGreeting() {
   const { user, setUser } = useUser();
@@ -16,14 +17,19 @@ export default function UserGreeting() {
       {user ? (
         <>
           <span className="text-sm">Hi {user.name}!</span>
-          <button onClick={logout} className="text-sm text-blue-600">
+          <Button onPress={logout} variant="light" color="primary" className="text-sm">
             Logout
-          </button>
+          </Button>
         </>
       ) : (
-        <button onClick={() => setOpen(true)} className="text-sm text-blue-600">
+        <Button
+          onPress={() => setOpen(true)}
+          variant="light"
+          color="primary"
+          className="text-sm"
+        >
           Login / Register
-        </button>
+        </Button>
       )}
       <AuthModal open={open} onClose={() => setOpen(false)} />
     </div>
