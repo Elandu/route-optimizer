@@ -77,6 +77,8 @@ export default function MapView({
       gmap.current = new window.google.maps.Map(mapRef.current, {
         center: mapState?.center ?? { lat: -25.2744, lng: 133.7751 },
         zoom: mapState?.zoom ?? 5,
+        disableDefaultUI: true,
+        zoomControl: true,
       });
       renderer.current = new window.google.maps.DirectionsRenderer();
       renderer.current!.setMap(gmap.current);
@@ -99,6 +101,8 @@ export default function MapView({
         gmap.current = new window.google.maps.Map(mapRef.current, {
           center: mapState?.center ?? { lat: -25.2744, lng: 133.7751 },
           zoom: mapState?.zoom ?? 5,
+          disableDefaultUI: true,
+          zoomControl: true,
         });
         gmap.current!.addListener('idle', () => {
           zoomRef.current = gmap.current?.getZoom() ?? null;

@@ -51,9 +51,30 @@ export default function Page() {
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [isOvernight, setIsOvernight] = useState(false);
   const [accomodation, setAccomodation] = useState('');
-  const [avoidTolls, setAvoidTolls] = useState(false);
-  const [maxStopsPerDay, setMaxStopsPerDay] = useState(5);
-  const [defaultServiceTime, setDefaultServiceTime] = useState(60);
+  const getBool = (key: string, def: boolean) => {
+    if (typeof window === 'undefined') return def;
+    const v = localStorage.getItem(key);
+    return v == null ? def : v === 'true';
+  };
+  const getNum = (key: string, def: number) => {
+    if (typeof window === 'undefined') return def;
+    const v = localStorage.getItem(key);
+    return v == null ? def : Number(v);
+  };
+  const getStr = (key: string, def: string) => {
+    if (typeof window === 'undefined') return def;
+    return localStorage.getItem(key) ?? def;
+  };
+
+  const [avoidTolls, setAvoidTolls] = useState(() => getBool('avoidTolls', false));
+  const [avoidFerries, setAvoidFerries] = useState(() => getBool('avoidFerries', false));
+  const [avoidHighways, setAvoidHighways] = useState(() => getBool('avoidHighways', false));
+  const [maxStopsPerDay, setMaxStopsPerDay] = useState(() => getNum('maxStopsPerDay', 5));
+  const [defaultServiceTime, setDefaultServiceTime] = useState(() => getNum('defaultServiceTime', 60));
+  const [timeBuffer, setTimeBuffer] = useState(() => getNum('timeBuffer', 5));
+  const [returnToStart, setReturnToStart] = useState(() => getBool('returnToStart', true));
+  const [endAddress, setEndAddress] = useState(() => getStr('endAddress', ''));
+  const [rememberMap, setRememberMap] = useState(() => getBool('rememberMap', true));
   const [stats, setStats] = useState<{travel:number; avg:number; stops:number; days:number} | null>(null);
   const [shouldRecalc, setShouldRecalc] = useState(false);
   const stopsCountRef = useRef(0);
@@ -66,7 +87,16 @@ export default function Page() {
     return 300;
   });
   const containerRef = useRef<HTMLDivElement>(null);
-  const [mapState, setMapState] = useState<{center: google.maps.LatLngLiteral | null; zoom: number | null}>({ center: null, zoom: null });
+  const [mapState, setMapState] = useState<{center: google.maps.LatLngLiteral | null; zoom: number | null}>(() => {
+    if (typeof window === 'undefined') return { center: null, zoom: null };
+    if (!getBool('rememberMap', true)) return { center: null, zoom: null };
+    const center = localStorage.getItem('mapCenter');
+    const zoom = localStorage.getItem('mapZoom');
+    return {
+      center: center ? JSON.parse(center) : null,
+      zoom: zoom ? Number(zoom) : null,
+    };
+  });
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const isMapVisible = isDesktop || currentTab === 'map';
 
@@ -91,6 +121,49 @@ export default function Page() {
       localStorage.setItem('tableHeight', String(tableHeight));
     }
   }, [tableHeight]);
+
+  useEffect(() => {
+    if (rememberMap && mapState.center && mapState.zoom != null) {
+      localStorage.setItem('mapCenter', JSON.stringify(mapState.center));
+      localStorage.setItem('mapZoom', String(mapState.zoom));
+    }
+  }, [mapState, rememberMap]);
+
+  useEffect(() => {
+    localStorage.setItem('avoidTolls', String(avoidTolls));
+  }, [avoidTolls]);
+
+  useEffect(() => {
+    localStorage.setItem('avoidFerries', String(avoidFerries));
+  }, [avoidFerries]);
+
+  useEffect(() => {
+    localStorage.setItem('avoidHighways', String(avoidHighways));
+  }, [avoidHighways]);
+
+  useEffect(() => {
+    localStorage.setItem('maxStopsPerDay', String(maxStopsPerDay));
+  }, [maxStopsPerDay]);
+
+  useEffect(() => {
+    localStorage.setItem('defaultServiceTime', String(defaultServiceTime));
+  }, [defaultServiceTime]);
+
+  useEffect(() => {
+    localStorage.setItem('timeBuffer', String(timeBuffer));
+  }, [timeBuffer]);
+
+  useEffect(() => {
+    localStorage.setItem('returnToStart', String(returnToStart));
+  }, [returnToStart]);
+
+  useEffect(() => {
+    localStorage.setItem('endAddress', endAddress);
+  }, [endAddress]);
+
+  useEffect(() => {
+    localStorage.setItem('rememberMap', String(rememberMap));
+  }, [rememberMap]);
 
   useEffect(() => {
     stopsCountRef.current = stops.length;
@@ -208,6 +281,7 @@ const remove = (id: string) => {
         const travelMin = leg && leg.duration ? leg.duration.value / 60 : 0;
         current = addMinutes(current, travelMin);
         travel += travelMin;
+        current = addMinutes(current, timeBuffer);
         const eta = current;
         current = addMinutes(current, stop.time);
         const etd = current;
@@ -252,7 +326,7 @@ const remove = (id: string) => {
 
       result.push({
         id: 'end',
-        address: startAddress,
+        address: returnToStart ? startAddress : endAddress || startAddress,
         time: 0,
         eta: formatTime(current),
         etd: formatTime(current),
@@ -282,7 +356,7 @@ const remove = (id: string) => {
           )
       );
     },
-    [startAddress, startDate, startTime, eodTime, accomodation, isOvernight]
+    [startAddress, startDate, startTime, eodTime, accomodation, isOvernight, timeBuffer, returnToStart, endAddress]
   );
 
   const recalcRoute = useCallback((currStops: Stop[]) => {
@@ -292,8 +366,11 @@ const remove = (id: string) => {
     svc.route(
       {
         origin: startAddress,
-        destination: startAddress,
+        destination: returnToStart ? startAddress : endAddress || startAddress,
         travelMode: window.google.maps.TravelMode.DRIVING,
+        avoidTolls,
+        avoidFerries,
+        avoidHighways,
         optimizeWaypoints: false,
         waypoints: currStops.map((s) => ({ location: s.address, stopover: true })),
       },
@@ -335,8 +412,11 @@ const remove = (id: string) => {
     svc.route(
       {
         origin: startAddress,
-        destination: startAddress,
+        destination: returnToStart ? startAddress : endAddress || startAddress,
         travelMode: window.google.maps.TravelMode.DRIVING,
+        avoidTolls,
+        avoidFerries,
+        avoidHighways,
         optimizeWaypoints: true,
         waypoints: baseStops.map(s => ({ location: s.address, stopover: true }))
       },
@@ -432,7 +512,7 @@ const remove = (id: string) => {
               placeholder="Start address"
             />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full">
             <AddressInput id="add-address" value={address} onChange={setAddress} placeholder="Add address" />
             <button
               onClick={addAddressLine}
@@ -447,7 +527,7 @@ const remove = (id: string) => {
             value={bulkAddresses}
             onChange={(e) => updateBulkAddresses(e.target.value)}
             placeholder="One address per line"
-            className="border px-3 py-2 rounded w-full h-40 box-border appearance-none dark:bg-gray-800 dark:text-white"
+            className="border px-3 py-2 rounded w-full h-40 box-border appearance-none dark:bg-gray-800 dark:text-white md:col-span-2"
           />
         </div>
       </div>
@@ -525,6 +605,39 @@ const remove = (id: string) => {
           />
           Avoid Tolls
         </label>
+        <label className="flex items-center">
+          <input
+            id="avoid-ferries"
+            type="checkbox"
+            checked={avoidFerries}
+            onChange={(e) => setAvoidFerries(e.target.checked)}
+            className="mr-2"
+          />
+          Avoid Ferries
+        </label>
+        <label className="flex items-center">
+          <input
+            id="avoid-highways"
+            type="checkbox"
+            checked={avoidHighways}
+            onChange={(e) => setAvoidHighways(e.target.checked)}
+            className="mr-2"
+          />
+          Avoid Highways
+        </label>
+        <label className="flex items-center">
+          <input
+            id="return-start"
+            type="checkbox"
+            checked={returnToStart}
+            onChange={(e) => setReturnToStart(e.target.checked)}
+            className="mr-2"
+          />
+          Return to start?
+        </label>
+        {!returnToStart && (
+          <AddressInput id="end-address" value={endAddress} onChange={setEndAddress} placeholder="End Address" />
+        )}
         <div className="flex flex-col">
           <label htmlFor="max-stops" className="mb-1">Max Stops per Day</label>
           <input
@@ -532,6 +645,16 @@ const remove = (id: string) => {
             type="number"
             value={maxStopsPerDay}
             onChange={(e) => setMaxStopsPerDay(parseInt(e.target.value) || 0)}
+            className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
+          />
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="time-buffer" className="mb-1">Time Buffer Between Stops (mins)</label>
+          <input
+            id="time-buffer"
+            type="number"
+            value={timeBuffer}
+            onChange={(e) => setTimeBuffer(parseInt(e.target.value) || 0)}
             className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
           />
         </div>
@@ -548,6 +671,18 @@ const remove = (id: string) => {
           className="border px-3 py-2 rounded w-full box-border appearance-none dark:bg-gray-800 dark:text-white"
         />
       </div>
+
+      <h3 className="text-md font-semibold text-gray-300 mt-4 mb-2">Map</h3>
+      <label className="flex items-center">
+        <input
+          id="remember-map"
+          type="checkbox"
+          checked={rememberMap}
+          onChange={(e) => setRememberMap(e.target.checked)}
+          className="mr-2"
+        />
+        Remember last map position
+      </label>
     </div>
   );
 
