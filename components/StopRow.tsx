@@ -65,15 +65,7 @@ export default function StopRow({
       } ${hovered || selected ? 'bg-gray-700 text-white' : ''}`}
     >
       <td className="p-2 text-center align-middle">
-        {!stop.isStart && (
-          <Image
-            src="https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2_hdpi.png"
-            className="w-4 h-6 inline-block"
-            alt="pin"
-            width={16}
-            height={24}
-          />
-        )}
+        {!stop.isStart && <span className="inline-block w-4">{label}</span>}
       </td>
       <td className="p-2">
         {stop.isAccom
