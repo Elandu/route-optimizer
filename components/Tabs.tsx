@@ -50,7 +50,12 @@ export default function Tabs({
   };
 
   return (
-    <Tab.Group selectedIndex={index} onChange={change} as="div" className="flex flex-col flex-1 overflow-hidden">
+    <Tab.Group
+      selectedIndex={index}
+      onChange={change}
+      as="div"
+      className="flex flex-col flex-1 overflow-hidden min-h-0"
+    >
       <Tab.List className="flex border-b px-4 py-2 space-x-2 sm:space-x-4">
         {items.map((item) => (
           <Tab
@@ -63,7 +68,7 @@ export default function Tabs({
           </Tab>
         ))}
       </Tab.List>
-      <Tab.Panels className="flex-1 overflow-y-auto scroll-touch">
+      <Tab.Panels className="flex-1 overflow-y-auto scroll-touch min-h-0">
         {items.map((item) => (
           <Tab.Panel key={item.key} className="p-4 h-full">
             {item.content}

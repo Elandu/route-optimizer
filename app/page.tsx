@@ -880,8 +880,8 @@ export default function Page() {
   return (
     <div className="flex flex-col w-full max-w-full overflow-x-hidden min-h-screen">
       <AuthHeader />
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr] flex-grow overflow-hidden gap-4">
-        <div className="flex flex-col flex-1">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1.5fr] flex-grow overflow-hidden gap-4 min-h-0">
+        <div className="flex flex-col flex-1 min-h-0">
           <Tabs
             defaultKey="run"
             selectedKey={currentTab}
