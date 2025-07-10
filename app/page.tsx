@@ -638,7 +638,7 @@ export default function Page() {
   );
 
   const addressesContent = (
-    <div className="min-h-[calc(100vh-8rem)] overflow-y-auto">
+    <div className="h-full overflow-y-auto">
       {addressFields}
     </div>
   );
@@ -673,7 +673,7 @@ export default function Page() {
   );
 
   const settingsContent = (
-    <div className="flex flex-col overflow-y-auto scroll-touch flex-1 px-4 md:px-8 py-4 space-y-4 min-h-[calc(100vh-8rem)]">
+    <div className="flex flex-col h-full overflow-y-auto scroll-touch flex-1 px-4 md:px-8 py-4 space-y-4">
       <div className="space-y-2">
         <h3 className="text-md font-semibold text-gray-300">Schedule</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
