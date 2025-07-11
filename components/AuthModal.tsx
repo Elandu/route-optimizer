@@ -38,7 +38,7 @@ export default function AuthModal({ open, onClose }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
-      setUser(data);
+      setUser({ ...data, status: 'Free' });
       onClose();
     } catch (err: any) {
       setError(err.message);
@@ -60,7 +60,7 @@ export default function AuthModal({ open, onClose }: Props) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Registration failed');
-      setUser(data);
+      setUser({ ...data, status: 'Free' });
       onClose();
     } catch (err: any) {
       setError(err.message);

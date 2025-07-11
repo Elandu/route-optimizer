@@ -39,7 +39,10 @@ export default function Page() {
   const [startTime, setStartTime] = useState("08:30");
   const [eodTime, setEodTime] = useState("17:00");
   const [address, setAddress] = useState("");
-  const [bulkAddresses, setBulkAddresses] = useState("");
+  const [bulkAddresses, setBulkAddresses] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return localStorage.getItem("bulkAddresses") || "";
+  });
   // user provided stops (without start/end or accom rows)
   const [stops, setStops] = useState<Stop[]>(() => {
     if (typeof window === "undefined") return [];
@@ -116,6 +119,15 @@ export default function Page() {
   } | null>(null);
   const [shouldRecalc, setShouldRecalc] = useState(false);
   const stopsCountRef = useRef(0);
+
+  const saveHistory = (addresses: string[]) => {
+    if (typeof window === "undefined") return;
+    try {
+      const h = JSON.parse(localStorage.getItem("history") || "[]");
+      h.unshift({ date: new Date().toISOString(), start: startAddress, stops: addresses });
+      localStorage.setItem("history", JSON.stringify(h.slice(0, 5)));
+    } catch {}
+  };
   const [currentTab, setCurrentTab] = useState<string>(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("currentTab") ?? "run";
@@ -252,6 +264,12 @@ export default function Page() {
       localStorage.setItem("timedStops", JSON.stringify(timedStops));
     }
   }, [timedStops]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("bulkAddresses", bulkAddresses);
+    }
+  }, [bulkAddresses]);
 
   const stopsWithTimes = timedStops;
 
@@ -565,6 +583,7 @@ export default function Page() {
         const ordered = order.map((i: number) => baseStops[i]);
         setStops(ordered);
         recalcRoute(ordered);
+        saveHistory(ordered.map((s) => s.address));
       },
     );
   };
