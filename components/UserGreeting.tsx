@@ -15,7 +15,9 @@ export default function UserGreeting() {
     <div className="flex items-center space-x-2">
       {user ? (
         <>
-          <span className="text-sm">Hi {user.name}!</span>
+          <a href="/user" className="text-sm text-blue-600 hover:underline">
+            Hi {user.name}!
+          </a>
           <button
             onClick={logout}
             className="text-sm text-blue-600 hover:underline"
