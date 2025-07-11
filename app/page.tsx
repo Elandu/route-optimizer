@@ -117,6 +117,7 @@ export default function Page() {
     stops: number;
     days: number;
   } | null>(null);
+  const [workdayWarning, setWorkdayWarning] = useState(false);
   const [shouldRecalc, setShouldRecalc] = useState(false);
   const stopsCountRef = useRef(0);
 
@@ -426,6 +427,15 @@ export default function Page() {
         days: day,
       });
 
+      const startDt = DateTime.fromISO(`${startDate}T${startTime}`);
+      const endDt = current;
+      const workMinutes = DateTime.fromISO(`${startDate}T${eodTime}`)
+        .diff(startDt, "minutes").minutes;
+      const totalMinutes = endDt.diff(startDt, "minutes").minutes;
+      setWorkdayWarning(
+        totalMinutes > workMinutes && !(isOvernight && accomodation.trim()),
+      );
+
       // remove consecutive duplicate start rows on the same day
       return result.filter(
         (s, i, arr) =>
@@ -589,28 +599,32 @@ export default function Page() {
           }
         }}
       />
-      {stats && (
-        <div className="mt-2 text-sm">
-          {`Total travel time: ${stats.travel} mins`}
-          <br />
-          {`Average travel per stop: ${stats.avg} mins`}
-          <br />
-          {`Total stops: ${stats.stops}`}
-          <br />
-          {`Number of days: ${stats.days}`}
-        </div>
-      )}
+      {/* stats moved below */}
     </>
   );
 
   const runActions = (
-    <div className="sticky bottom-0 left-0 right-0 p-4 bg-background z-10 shadow-md">
+    <div className="sticky bottom-0 left-0 right-0 p-4 bg-background z-10 shadow-md space-y-2">
       <button
         onClick={generateRoute}
         className="w-full bg-blue-500 text-white py-2 rounded"
+        aria-label="Generate Run"
       >
         Generate Run
       </button>
+      {workdayWarning && (
+        <div role="alert" className="text-sm bg-yellow-100 text-yellow-800 p-2 rounded">
+          ⚠️ Route may exceed a standard workday and no overnight stop has been specified.
+        </div>
+      )}
+      {stats && (
+        <div className="flex flex-wrap gap-2 text-xs justify-center">
+          <span className="px-2 py-1 bg-gray-100 rounded">Total travel: {stats.travel} mins</span>
+          <span className="px-2 py-1 bg-gray-100 rounded">Avg per stop: {stats.avg} mins</span>
+          <span className="px-2 py-1 bg-gray-100 rounded">Stops: {stats.stops}</span>
+          <span className="px-2 py-1 bg-gray-100 rounded">Days: {stats.days}</span>
+        </div>
+      )}
       {stops.length > 0 && (
         <ShareModal url={shareUrl} onShare={generateShare} />
       )}
@@ -619,8 +633,8 @@ export default function Page() {
 
   const addressFields = (
     <div className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="flex flex-col w-full">
+      <div className="flex flex-col md:flex-row md:items-end gap-2 w-full">
+        <div className="flex flex-col flex-1">
           <label htmlFor="start-address" className="mb-1">
             Start Address
           </label>
@@ -631,16 +645,18 @@ export default function Page() {
             placeholder="Start address"
           />
         </div>
-        <div className="flex gap-2 w-full items-end">
+        <div className="flex flex-1 gap-2 items-end">
           <AddressInput
             id="add-address"
             value={address}
             onChange={setAddress}
             placeholder="Add address"
+            className="flex-grow"
           />
           <button
             onClick={addAddressLine}
-            className="h-10 px-4 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600"
+            className="h-10 px-4 rounded border text-sm bg-blue-500 text-white hover:bg-blue-600 shrink-0"
+            aria-label="Add address"
           >
             Add
           </button>
@@ -669,7 +685,7 @@ export default function Page() {
       <div className="flex flex-col flex-1">
         {isDesktop && (
           <div
-            className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b md:border-r border-gray-200 dark:border-gray-700 h-[220px]"
+            className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b md:border-r border-gray-200 dark:border-gray-700 max-h-96"
           >
             {addressFields}
           </div>
