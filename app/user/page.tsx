@@ -15,6 +15,7 @@ export default function UserPage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
   useEffect(() => {
+    if (user === undefined) return;
     if (!user) {
       router.push('/');
       return;
@@ -25,7 +26,7 @@ export default function UserPage() {
     } catch {}
   }, [user, router]);
 
-  if (!user) return null;
+  if (user === undefined || !user) return null;
 
   return (
     <div className="p-4 space-y-4">

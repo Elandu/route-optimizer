@@ -11,6 +11,8 @@ export default function UserGreeting() {
     setUser(null);
   };
 
+  if (user === undefined) return null;
+
   return (
     <div className="flex items-center space-x-2">
       {user ? (

@@ -724,7 +724,7 @@ export default function Page() {
             className="h-3 bg-gray-600 cursor-row-resize touch-none"
           />
         )}
-        <div className="flex-1 overflow-y-auto scroll-touch p-4 pb-24">
+        <div className="flex-1 overflow-y-auto scroll-touch p-4 pb-24 min-h-0">
           {tableContent}
         </div>
         {isDesktop && runActions}
