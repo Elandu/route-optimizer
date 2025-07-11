@@ -41,9 +41,27 @@ export default function Page() {
   const [address, setAddress] = useState("");
   const [bulkAddresses, setBulkAddresses] = useState("");
   // user provided stops (without start/end or accom rows)
-  const [stops, setStops] = useState<Stop[]>([]);
+  const [stops, setStops] = useState<Stop[]>(() => {
+    if (typeof window === "undefined") return [];
+    const saved = localStorage.getItem("stops");
+    if (!saved) return [];
+    try {
+      return JSON.parse(saved) as Stop[];
+    } catch {
+      return [];
+    }
+  });
   // calculated stops with timings and extra rows
-  const [timedStops, setTimedStops] = useState<Stop[]>([]);
+  const [timedStops, setTimedStops] = useState<Stop[]>(() => {
+    if (typeof window === "undefined") return [];
+    const saved = localStorage.getItem("timedStops");
+    if (!saved) return [];
+    try {
+      return JSON.parse(saved) as Stop[];
+    } catch {
+      return [];
+    }
+  });
   const [shareUrl, setShareUrl] = useState("");
   const [dragging, setDragging] = useState<string | null>(null);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
@@ -222,6 +240,18 @@ export default function Page() {
   useEffect(() => {
     stopsCountRef.current = stops.length;
   }, [stops.length]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("stops", JSON.stringify(stops));
+    }
+  }, [stops]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("timedStops", JSON.stringify(timedStops));
+    }
+  }, [timedStops]);
 
   const stopsWithTimes = timedStops;
 
@@ -563,6 +593,7 @@ export default function Page() {
     <>
       <RunTable
         stops={stopsWithTimes}
+        startDate={startDate}
         draggingId={dragging}
         remove={remove}
         onDragStart={onDragStart}
@@ -656,7 +687,7 @@ export default function Page() {
   const runContent = (
     <div
       ref={containerRef}
-      className="flex flex-col h-full min-h-[calc(100vh-8rem)]"
+      className="flex flex-col h-full min-h-[calc(100vh-8rem)] overflow-hidden"
     >
       <div className="flex flex-col flex-1 overflow-y-auto">
         {isDesktop && (
@@ -677,8 +708,8 @@ export default function Page() {
         <div className="flex-1 overflow-y-auto scroll-touch p-4 pb-24">
           {tableContent}
         </div>
+        {isDesktop && runActions}
       </div>
-      {isDesktop && runActions}
     </div>
   );
 
