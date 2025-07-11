@@ -706,7 +706,7 @@ export default function Page() {
   const runContent = (
     <div
       ref={containerRef}
-      className="flex flex-col h-full min-h-[calc(100vh-8rem)] overflow-hidden"
+      className="flex flex-col overflow-hidden max-h-[calc(100vh-8rem)]"
     >
       <div className="flex flex-col flex-1 overflow-y-auto">
         {isDesktop && (
@@ -724,7 +724,7 @@ export default function Page() {
             className="h-3 bg-gray-600 cursor-row-resize touch-none"
           />
         )}
-        <div className="flex-1 overflow-y-auto scroll-touch p-4 pb-24 min-h-0">
+        <div className="flex-1 overflow-y-auto scroll-touch p-4 pb-24 min-h-0 max-h-[calc(100vh-16rem)]">
           {tableContent}
         </div>
         {isDesktop && runActions}
