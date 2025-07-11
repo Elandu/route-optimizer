@@ -1,14 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Tab } from '@headlessui/react';
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-} from '@heroui/react';
+import { Button } from '@heroui/react';
 import TextInput from './TextInput';
 import { useUser } from '@/UserContext';
 
@@ -76,27 +69,29 @@ export default function AuthModal({ open, onClose }: Props) {
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Modal
-      isOpen={open}
-      onOpenChange={(o) => {
-        if (!o) onClose();
-      }}
-      placement="center"
-      scrollBehavior="inside"
-      classNames={{
-        wrapper: 'z-[1000]',
-        backdrop: 'z-[1000]',
-        base: 'w-full max-w-[95vw] sm:max-w-md'
-      }}
-    >
-      <ModalContent className="space-y-4 max-h-[90vh] overflow-y-auto">
-        <ModalHeader>Account</ModalHeader>
-        <ModalBody className="space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded shadow w-full max-w-md max-h-[90vh] overflow-y-auto space-y-4 p-6">
+        <div className="flex justify-between items-center border-b pb-2">
+          <h2 className="text-lg font-semibold">Account</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            aria-label="Close"
+          >
+            &times;
+          </button>
+        </div>
+        <div className="space-y-4">
           <Tab.Group selectedIndex={tab} onChange={setTab}>
             <Tab.List className="flex space-x-2 border-b">
-              <Tab className={({ selected }) => `px-3 py-2 text-sm focus:outline-none ${selected ? 'border-b-2 border-blue-500' : 'border-b-2 border-transparent'}`}>Login</Tab>
-              <Tab className={({ selected }) => `px-3 py-2 text-sm focus:outline-none ${selected ? 'border-b-2 border-blue-500' : 'border-b-2 border-transparent'}`}>Register</Tab>
+              <Tab className={({ selected }) =>
+                `px-3 py-2 text-sm focus:outline-none ${selected ? 'border-b-2 border-blue-500' : 'border-b-2 border-transparent'}`}>Login</Tab>
+              <Tab className={({ selected }) =>
+                `px-3 py-2 text-sm focus:outline-none ${selected ? 'border-b-2 border-blue-500' : 'border-b-2 border-transparent'}`}>Register</Tab>
             </Tab.List>
             <Tab.Panels className="mt-4">
               <Tab.Panel>
@@ -117,11 +112,11 @@ export default function AuthModal({ open, onClose }: Props) {
             </Tab.Panels>
           </Tab.Group>
           {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
-        </ModalBody>
-        <ModalFooter>
-          <Button color="primary" variant="light" onPress={onClose} fullWidth>Close</Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </div>
+        <Button color="primary" variant="light" onPress={onClose} fullWidth>
+          Close
+        </Button>
+      </div>
+    </div>
   );
 }
