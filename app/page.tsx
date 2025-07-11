@@ -2,12 +2,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import AddressInput from "../components/AddressInput";
 import RunTable from "../components/RunTable";
-import ShareModal from "../components/ShareModal";
 import AuthHeader from "../components/AuthHeader";
 import MapView from "../components/MapView";
 import Tabs, { TabItem } from "../components/Tabs";
 import useMediaQuery from "../lib/useMediaQuery";
-import { encrypt } from "../lib/encryption";
 import { addMinutes, formatTime, parseTime } from "../lib/time";
 import { DateTime } from "luxon";
 import Script from "next/script";
@@ -65,7 +63,6 @@ export default function Page() {
       return [];
     }
   });
-  const [shareUrl, setShareUrl] = useState("");
   const [dragging, setDragging] = useState<string | null>(null);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
@@ -116,16 +113,22 @@ export default function Page() {
     avg: number;
     stops: number;
     days: number;
+    total: number;
   } | null>(null);
   const [workdayWarning, setWorkdayWarning] = useState(false);
   const [shouldRecalc, setShouldRecalc] = useState(false);
   const stopsCountRef = useRef(0);
 
-  const saveHistory = (addresses: string[]) => {
+  const saveHistory = (addresses: string[], total: number) => {
     if (typeof window === "undefined") return;
     try {
       const h = JSON.parse(localStorage.getItem("history") || "[]");
-      h.unshift({ date: new Date().toISOString(), start: startAddress, stops: addresses });
+      h.unshift({
+        date: new Date().toISOString(),
+        start: startAddress,
+        stops: addresses,
+        total,
+      });
       localStorage.setItem("history", JSON.stringify(h.slice(0, 5)));
     } catch {}
   };
@@ -420,32 +423,39 @@ export default function Page() {
       });
 
       const avg = currStops.length ? travel / currStops.length : 0;
+
+      const startDt = DateTime.fromISO(`${startDate}T${startTime}`);
+      const endDt = current;
+      const totalMinutes = endDt.diff(startDt, "minutes").minutes;
+
       setStats({
         travel: Math.round(travel),
         avg: Math.round(avg),
         stops: currStops.length,
         days: day,
+        total: Math.round(totalMinutes),
       });
 
-      const startDt = DateTime.fromISO(`${startDate}T${startTime}`);
-      const endDt = current;
       const workMinutes = DateTime.fromISO(`${startDate}T${eodTime}`)
         .diff(startDt, "minutes").minutes;
-      const totalMinutes = endDt.diff(startDt, "minutes").minutes;
+      const totalMinutesWork = totalMinutes;
       setWorkdayWarning(
-        totalMinutes > workMinutes && !(isOvernight && accomodation.trim()),
+        totalMinutesWork > workMinutes && !(isOvernight && accomodation.trim()),
       );
 
       // remove consecutive duplicate start rows on the same day
-      return result.filter(
-        (s, i, arr) =>
-          !(
-            s.isStart &&
-            i > 0 &&
-            arr[i - 1].isStart &&
-            arr[i - 1].day === s.day
-          ),
-      );
+      return {
+        stops: result.filter(
+          (s, i, arr) =>
+            !(
+              s.isStart &&
+              i > 0 &&
+              arr[i - 1].isStart &&
+              arr[i - 1].day === s.day
+            ),
+        ),
+        totalMinutes: Math.round(totalMinutes),
+      };
     },
     [
       startAddress,
@@ -461,7 +471,7 @@ export default function Page() {
   );
 
   const recalcRoute = useCallback(
-    (currStops: Stop[]) => {
+    (currStops: Stop[], done?: (total: number) => void) => {
       if (!window.google || !startAddress) return;
       const svc = new window.google.maps.DirectionsService();
       setDirections(null);
@@ -487,9 +497,10 @@ export default function Page() {
             return;
           }
           const legs = res.routes[0].legs;
-          const updated = applyTimes(currStops, legs);
+          const { stops: updated, totalMinutes } = applyTimes(currStops, legs);
           setTimedStops(updated);
           setDirections(res);
+          done?.(totalMinutes);
         },
       );
     },
@@ -553,31 +564,13 @@ export default function Page() {
         const order = res.routes[0].waypoint_order;
         const ordered = order.map((i: number) => baseStops[i]);
         setStops(ordered);
-        recalcRoute(ordered);
-        saveHistory(ordered.map((s) => s.address));
+        recalcRoute(ordered, (tot) => {
+          saveHistory(ordered.map((s) => s.address), tot);
+        });
       },
     );
   };
 
-  const generateShare = async () => {
-    if (!window.grecaptcha) return;
-    const token = await window.grecaptcha.execute(
-      process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!,
-      { action: "share" },
-    );
-    const verify = await fetch("/api/verify-captcha", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token }),
-    }).then((r) => r.json());
-    if (!verify.success) {
-      alert("reCAPTCHA failed");
-      return;
-    }
-    const data = JSON.stringify(stops);
-    const enc = await encrypt(data, "demo");
-    setShareUrl(`${window.location.origin}?d=${encodeURIComponent(enc)}`);
-  };
 
   const tableContent = (
     <>
@@ -623,18 +616,17 @@ export default function Page() {
           <span className="px-2 py-1 bg-gray-100 rounded">Avg per stop: {stats.avg} mins</span>
           <span className="px-2 py-1 bg-gray-100 rounded">Stops: {stats.stops}</span>
           <span className="px-2 py-1 bg-gray-100 rounded">Days: {stats.days}</span>
+          <span className="px-2 py-1 bg-gray-100 rounded">Total time: {stats.total} mins</span>
         </div>
       )}
-      {stops.length > 0 && (
-        <ShareModal url={shareUrl} onShare={generateShare} />
-      )}
+      {/* Share button removed */}
     </div>
   );
 
   const addressFields = (
-    <div className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch">
-      <div className="flex flex-col md:flex-row md:items-end gap-2 w-full">
-        <div className="flex flex-col flex-1">
+    <div className="flex flex-col gap-4 overflow-y-auto overflow-x-hidden scroll-touch">
+      <div className="flex flex-col md:flex-row md:items-end gap-4 w-full">
+        <div className="flex flex-col flex-1 space-y-2">
           <label htmlFor="start-address" className="mb-1">
             Start Address
           </label>
@@ -674,18 +666,18 @@ export default function Page() {
   );
 
   const addressesContent = (
-    <div className="flex flex-col min-h-[calc(100vh-8rem)] overflow-y-auto">
+    <div className="flex flex-col min-h-[calc(100vh-8rem)] overflow-y-auto mx-auto max-w-screen-lg w-full px-4">
       {addressFields}
       {!isDesktop && runActions}
     </div>
   );
 
   const runContent = (
-    <div className="flex flex-col overflow-hidden h-[calc(100vh-8rem)]">
+    <div className="flex flex-col overflow-hidden h-[calc(100vh-8rem)] mx-auto max-w-screen-lg w-full">
       <div className="flex flex-col flex-1">
         {isDesktop && (
           <div
-            className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b md:border-r border-gray-200 dark:border-gray-700 max-h-96"
+            className="flex flex-col gap-4 overflow-y-auto overflow-x-hidden scroll-touch border-b md:border-r border-gray-200 dark:border-gray-700 max-h-96 px-4"
           >
             {addressFields}
           </div>
