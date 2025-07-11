@@ -180,8 +180,9 @@ export default function Page() {
     const lines = cleanLines(text);
     if (lines.length > MAX_STOPS) {
       alert(`Maximum ${MAX_STOPS} stops allowed`);
+      return;
     }
-    setBulkAddresses(lines.slice(0, MAX_STOPS).join("\n"));
+    setBulkAddresses(text);
   };
 
 
