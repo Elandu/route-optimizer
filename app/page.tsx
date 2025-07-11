@@ -621,6 +621,9 @@ export default function Page() {
         void recalcRoute(ordered, (tot) => {
           saveHistory(ordered.map((s) => s.address), tot);
         });
+        if (typeof window !== "undefined" && window.innerWidth < 768) {
+          setCurrentTab("run");
+        }
       },
     );
   };
