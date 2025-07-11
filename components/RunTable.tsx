@@ -44,13 +44,13 @@ export default function RunTable({
       <table className="w-full text-sm border-collapse table-fixed">
         <thead>
           <tr className="bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold text-xs sticky top-0 z-10">
-            <th className="p-2 text-center">#</th>
-            <th className="p-2 text-left">Stop</th>
-            <th className="p-2 text-left">Time (min)</th>
-            <th className="p-2 text-left">ETA</th>
-            <th className="p-2 text-left">ETD</th>
-            <th className="p-2 text-left">Travel Time to Next</th>
-            <th className="p-2"></th>
+            <th className="p-2 text-center w-8">#</th>
+            <th className="p-2 text-left w-2/5">Stop</th>
+            <th className="p-2 text-left w-20">Time (min)</th>
+            <th className="p-2 text-left w-20">ETA</th>
+            <th className="p-2 text-left w-20">ETD</th>
+            <th className="p-2 text-left w-32">Travel Time to Next</th>
+            <th className="p-2 w-10"></th>
           </tr>
         </thead>
         <tbody>
