@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import AddressInput from "../components/AddressInput";
 import RunTable from "../components/RunTable";
 import ShareModal from "../components/ShareModal";
@@ -134,14 +134,6 @@ export default function Page() {
     }
     return "run";
   });
-  const [tableHeight, setTableHeight] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const saved = Number(localStorage.getItem("tableHeight"));
-      return saved || 300;
-    }
-    return 300;
-  });
-  const containerRef = useRef<HTMLDivElement>(null);
   const [mapState, setMapState] = useState<{
     center: google.maps.LatLngLiteral | null;
     zoom: number | null;
@@ -188,11 +180,6 @@ export default function Page() {
     setBulkAddresses(lines.slice(0, MAX_STOPS).join("\n"));
   };
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("tableHeight", String(tableHeight));
-    }
-  }, [tableHeight]);
 
   useEffect(() => {
     if (rememberMap && mapState.center && mapState.zoom != null) {
@@ -295,33 +282,7 @@ export default function Page() {
     setAddress("");
   };
 
-  const startResize = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    const startY = "touches" in e ? e.touches[0].clientY : e.clientY;
-    const startHeight = tableHeight;
-    const move = (ev: any) => {
-      const y = "touches" in ev ? ev.touches[0].clientY : ev.clientY;
-      const delta = y - startY;
-      const container = containerRef.current;
-      if (!container) return;
-      const max = Math.min(container.clientHeight, window.innerHeight * 0.8);
-      const min = 150;
-      let newHeight = startHeight + delta;
-      if (newHeight < min) newHeight = min;
-      if (newHeight > max) newHeight = max;
-      setTableHeight(newHeight);
-    };
-    const stop = () => {
-      document.removeEventListener("mousemove", move);
-      document.removeEventListener("mouseup", stop);
-      document.removeEventListener("touchmove", move);
-      document.removeEventListener("touchend", stop);
-    };
-    document.addEventListener("mousemove", move);
-    document.addEventListener("mouseup", stop);
-    document.addEventListener("touchmove", move);
-    document.addEventListener("touchend", stop);
-  };
+
 
   const onDragStart = (id: string) => setDragging(id);
 
@@ -690,7 +651,7 @@ export default function Page() {
           value={bulkAddresses}
           onChange={(e) => updateBulkAddresses(e.target.value)}
           placeholder="One address per line"
-          className="border px-3 py-2 rounded w-full h-40 box-border appearance-none dark:bg-gray-800 dark:text-white md:col-span-2"
+          className="border px-3 py-2 rounded w-full h-40 box-border appearance-none dark:bg-gray-800 dark:text-white md:col-span-2 resize-none overflow-y-auto"
         />
       </div>
     </div>
@@ -704,27 +665,16 @@ export default function Page() {
   );
 
   const runContent = (
-    <div
-      ref={containerRef}
-      className="flex flex-col overflow-hidden max-h-[calc(100vh-8rem)]"
-    >
-      <div className="flex flex-col flex-1 overflow-y-auto">
+    <div className="flex flex-col overflow-hidden h-[calc(100vh-8rem)]">
+      <div className="flex flex-col flex-1">
         {isDesktop && (
           <div
-            className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b md:border-r border-gray-200 dark:border-gray-700"
-            style={{ height: tableHeight, minHeight: 150, maxHeight: "80vh" }}
+            className="flex flex-col gap-4 p-4 overflow-y-auto overflow-x-hidden scroll-touch border-b md:border-r border-gray-200 dark:border-gray-700 h-[220px]"
           >
             {addressFields}
           </div>
         )}
-        {isDesktop && (
-          <div
-            onMouseDown={startResize}
-            onTouchStart={startResize}
-            className="h-3 bg-gray-600 cursor-row-resize touch-none"
-          />
-        )}
-        <div className="flex-1 overflow-y-auto scroll-touch p-4 pb-24 min-h-0 max-h-[calc(100vh-16rem)]">
+        <div className="flex-1 overflow-y-auto scroll-touch p-4 pb-24 min-h-0">
           {tableContent}
         </div>
         {isDesktop && runActions}
