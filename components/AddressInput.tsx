@@ -28,8 +28,16 @@ export default function AddressInput({ value, onChange, placeholder, title, aria
   useEffect(() => {
     let ac: google.maps.places.Autocomplete | null = null;
     function init() {
-      if (!window.google || !ref.current) return;
-      ac = new window.google.maps.places.Autocomplete(ref.current!, { types: ['address'] });
+      if (
+        !window.google ||
+        !window.google.maps ||
+        !window.google.maps.places ||
+        !ref.current
+      )
+        return;
+      ac = new window.google.maps.places.Autocomplete(ref.current!, {
+        types: ['address'],
+      });
       ac!.addListener('place_changed', () => {
         const place = ac!.getPlace();
         if (place.formatted_address) onChange(place.formatted_address);
