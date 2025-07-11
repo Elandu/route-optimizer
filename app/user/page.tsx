@@ -7,6 +7,7 @@ type HistoryItem = {
   date: string;
   start: string;
   stops: string[];
+  total: number;
 };
 
 export default function UserPage() {
@@ -22,11 +23,23 @@ export default function UserPage() {
     }
     try {
       const stored = localStorage.getItem('history');
-      if (stored) setHistory(JSON.parse(stored));
+      if (stored) {
+        const parsed: HistoryItem[] = JSON.parse(stored).map((h: any) => ({
+          ...h,
+          total: h.total ?? 0,
+        }));
+        setHistory(parsed);
+      }
     } catch {}
   }, [user, router]);
 
   if (user === undefined || !user) return null;
+
+  const loadRun = (item: HistoryItem) => {
+    localStorage.setItem('startAddress', item.start);
+    localStorage.setItem('bulkAddresses', item.stops.join('\n'));
+    router.push('/');
+  };
 
   return (
     <div className="p-4 space-y-4">
@@ -35,14 +48,43 @@ export default function UserPage() {
       <div>Email: {user.email}</div>
       <div>Status: {user.status || 'Free'}</div>
       <h2 className="text-lg font-semibold mt-4">History</h2>
-      <ul className="list-disc pl-4">
-        {history.slice(0, 5).map((h, idx) => (
-          <li key={idx}>
-            {new Date(h.date).toLocaleString()}: {h.stops.join(', ')}
-          </li>
-        ))}
-        {history.length === 0 && <li>No history found.</li>}
-      </ul>
+      <div className="overflow-x-auto">
+        <table className="table-auto w-full text-sm">
+          <thead>
+            <tr className="bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white">
+              <th className="p-2">#</th>
+              <th className="p-2">Date</th>
+              <th className="p-2">Start Address</th>
+              <th className="p-2 text-center">Stops</th>
+              <th className="p-2 text-center">Total Time</th>
+              <th className="p-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.slice(0, 5).map((h, idx) => (
+              <tr key={idx} className="hover:bg-gray-50">
+                <td className="p-2">{idx + 1}</td>
+                <td className="p-2">{new Date(h.date).toLocaleString()}</td>
+                <td className="p-2 whitespace-nowrap">{h.start}</td>
+                <td className="p-2 text-center">{h.stops.length}</td>
+                <td className="p-2 text-center">{h.total} mins</td>
+                <td className="p-2">
+                  <button className="text-blue-600 hover:underline" onClick={() => loadRun(h)}>
+                    Load
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {history.length === 0 && (
+              <tr>
+                <td className="p-2" colSpan={6}>
+                  No history found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
