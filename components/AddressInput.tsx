@@ -35,8 +35,12 @@ export default function AddressInput({ value, onChange, placeholder, title, aria
         !ref.current
       )
         return;
+      const locale =
+        typeof navigator !== 'undefined' ? navigator.language || 'en-US' : 'en-US';
+      const country = locale.includes('-') ? locale.split('-')[1] : undefined;
       ac = new window.google.maps.places.Autocomplete(ref.current!, {
         types: ['address'],
+        ...(country ? { componentRestrictions: { country } } : {}),
       });
       ac!.addListener('place_changed', () => {
         const place = ac!.getPlace();

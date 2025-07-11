@@ -58,9 +58,13 @@ export default function MapView({
   const infoRef = useRef<google.maps.InfoWindow | null>(null);
   const prevDirections = useRef<google.maps.DirectionsResult | null>(null);
 
+  const userLocale =
+    typeof navigator !== 'undefined' ? navigator.language || 'en-US' : 'en-US';
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     libraries: GOOGLE_MAPS_LIBRARIES,
+    language: userLocale,
+    region: userLocale.split('-')[1],
   });
 
 
