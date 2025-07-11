@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useUser } from '@/UserContext';
 import { useRouter } from 'next/navigation';
+import { Button } from '@heroui/react';
 
 type HistoryItem = {
   date: string;
@@ -69,9 +70,14 @@ export default function UserPage() {
                 <td className="p-2 text-center">{h.stops.length}</td>
                 <td className="p-2 text-center">{h.total} mins</td>
                 <td className="p-2">
-                  <button className="text-blue-600 hover:underline" onClick={() => loadRun(h)}>
+                  <Button
+                    size="sm"
+                    variant="light"
+                    color="primary"
+                    onPress={() => loadRun(h)}
+                  >
                     Load
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}
