@@ -8,7 +8,11 @@ export interface User {
 }
 
 interface UserContextValue {
-  user: User | null;
+  /**
+   * `undefined` indicates the auth state has not yet been
+   * loaded from storage. `null` means no logged in user.
+   */
+  user: User | null | undefined;
   setUser: (user: User | null) => void;
 }
 
@@ -18,13 +22,20 @@ const UserContext = createContext<UserContextValue>({
 });
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUserState] = useState<User | null>(null);
+  // `undefined` until localStorage has been read
+  const [user, setUserState] = useState<User | null | undefined>(undefined);
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem('user');
-      if (stored) setUserState(JSON.parse(stored));
-    } catch {}
+      if (stored) {
+        setUserState(JSON.parse(stored));
+      } else {
+        setUserState(null);
+      }
+    } catch {
+      setUserState(null);
+    }
   }, []);
 
   const setUser = (u: User | null) => {

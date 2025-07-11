@@ -40,7 +40,7 @@ export default function RunTable({
   onSelect,
 }: Props) {
   return (
-    <div className="h-full overflow-y-auto scroll-touch">
+    <div className="h-full overflow-y-auto scroll-touch min-h-0">
       <table className="w-full text-sm border-collapse table-fixed">
         <thead>
           <tr className="bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold text-xs sticky top-0 z-10">
