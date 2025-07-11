@@ -299,7 +299,7 @@ export default function Page() {
     const [item] = newStops.splice(from, 1);
     newStops.splice(to, 0, item);
     setStops(newStops);
-    recalcRoute(newStops);
+    void recalcRoute(newStops);
     setDragging(null);
   };
 
@@ -315,7 +315,7 @@ export default function Page() {
   const changeTime = (id: string, t: number) => {
     const updated = stops.map((s) => (s.id === id ? { ...s, time: t } : s));
     setStops(updated);
-    recalcRoute(updated);
+    void recalcRoute(updated);
   };
 
   const remove = (id: string) => {
@@ -328,12 +328,12 @@ export default function Page() {
       setSelectedIdx(null);
       setHoveredIdx(null);
     } else {
-      recalcRoute(updated);
+      void recalcRoute(updated);
     }
   };
 
   const applyTimes = useCallback(
-    (currStops: Stop[], legs: google.maps.DirectionsLeg[]) => {
+    async (currStops: Stop[], legs: google.maps.DirectionsLeg[]) => {
       let current = DateTime.fromISO(`${startDate}T${startTime}`);
       const [eodHour, eodMinute] = eodTime
         .split(":")
@@ -345,6 +345,30 @@ export default function Page() {
       let travel = 0;
       const result: Stop[] = [];
       let dayEnd = current.set({ hour: eodHour, minute: eodMinute });
+      const getTravelMinutes = (from: string, to: string) =>
+        new Promise<number>((resolve) => {
+          if (!window.google) return resolve(0);
+          const svc = new window.google.maps.DistanceMatrixService();
+          svc.getDistanceMatrix(
+            {
+              origins: [from],
+              destinations: [to],
+              travelMode: window.google.maps.TravelMode.DRIVING,
+              avoidTolls,
+              avoidFerries,
+              avoidHighways,
+            },
+            (res: any, status: string) => {
+              const val =
+                status === "OK" &&
+                res.rows[0] &&
+                res.rows[0].elements[0].status === "OK"
+                  ? res.rows[0].elements[0].duration.value / 60
+                  : 0;
+              resolve(val);
+            },
+          );
+        });
 
       result.push({
         id: "start",
@@ -359,9 +383,16 @@ export default function Page() {
         travelNext: legs[0]?.duration?.text,
       });
 
-      currStops.forEach((stop, idx) => {
-        const leg = legs[idx];
-        const travelMin = leg && leg.duration ? leg.duration.value / 60 : 0;
+      let startFromHotel = false;
+      for (let idx = 0; idx < currStops.length; idx++) {
+        const stop = currStops[idx];
+        let travelMin = 0;
+        if (startFromHotel) {
+          travelMin = await getTravelMinutes(accomodation, stop.address);
+        } else {
+          const leg = legs[idx];
+          travelMin = leg && leg.duration ? leg.duration.value / 60 : 0;
+        }
         current = addMinutes(current, travelMin);
         travel += travelMin;
         current = addMinutes(current, timeBuffer);
@@ -375,11 +406,18 @@ export default function Page() {
           etaIso: eta.toISO() ?? undefined,
           etdIso: etd.toISO() ?? undefined,
           day,
-          travelNext: legs[idx + 1]?.duration?.text,
+          travelNext: undefined,
         });
 
+        let nextLegMin = 0;
         if (etd > dayEnd) {
-          const overEta = etd;
+          let toHotel = 0;
+          if (isOvernight && accomodation.trim()) {
+            toHotel = await getTravelMinutes(stop.address, accomodation);
+            current = addMinutes(current, toHotel);
+            travel += toHotel;
+          }
+          const overEta = current;
           const nextStart = overEta
             .plus({ days: 1 })
             .set({ hour: startHour, minute: startMinute });
@@ -394,16 +432,32 @@ export default function Page() {
               etdIso: nextStart.toISO() ?? undefined,
               day,
               isAccom: true,
+              travelNext: undefined,
             });
+            if (toHotel > 0) {
+              result[result.length - 2].travelNext = `${Math.round(toHotel)} mins`;
+            }
           }
           day++;
           current = nextStart;
           dayEnd = current.set({ hour: eodHour, minute: eodMinute });
+          startFromHotel = isOvernight && accomodation.trim() !== "";
+          if (startFromHotel && idx + 1 < currStops.length) {
+            nextLegMin = await getTravelMinutes(accomodation, currStops[idx + 1].address);
+          }
+        } else {
+          const nextLeg = legs[idx + 1];
+          nextLegMin = nextLeg && nextLeg.duration ? nextLeg.duration.value / 60 : 0;
         }
-      });
+        result[result.length - 1].travelNext = nextLegMin ? `${Math.round(nextLegMin)} mins` : undefined;
+      }
 
       const lastLeg = legs[currStops.length];
-      if (lastLeg && lastLeg.duration) {
+      if (startFromHotel && accomodation.trim()) {
+        const min = await getTravelMinutes(accomodation, returnToStart ? startAddress : endAddress || startAddress);
+        current = addMinutes(current, min);
+        travel += min;
+      } else if (lastLeg && lastLeg.duration) {
         const min = lastLeg.duration.value / 60;
         current = addMinutes(current, min);
         travel += min;
@@ -471,7 +525,7 @@ export default function Page() {
   );
 
   const recalcRoute = useCallback(
-    (currStops: Stop[], done?: (total: number) => void) => {
+    async (currStops: Stop[], done?: (total: number) => void) => {
       if (!window.google || !startAddress) return;
       const svc = new window.google.maps.DirectionsService();
       setDirections(null);
@@ -491,13 +545,13 @@ export default function Page() {
             stopover: true,
           })),
         },
-        (res: google.maps.DirectionsResult, status: string) => {
+        async (res: google.maps.DirectionsResult, status: string) => {
           if (status !== "OK" || !res.routes || !res.routes[0]) {
             console.error("Route recalculation failed:", status, res);
             return;
           }
           const legs = res.routes[0].legs;
-          const { stops: updated, totalMinutes } = applyTimes(currStops, legs);
+          const { stops: updated, totalMinutes } = await applyTimes(currStops, legs);
           setTimedStops(updated);
           setDirections(res);
           done?.(totalMinutes);
@@ -517,7 +571,7 @@ export default function Page() {
 
   useEffect(() => {
     if (shouldRecalc && stops.length > 0) {
-      recalcRoute(stops);
+      void recalcRoute(stops);
       setShouldRecalc(false);
     }
   }, [shouldRecalc, recalcRoute, stops]);
@@ -564,7 +618,7 @@ export default function Page() {
         const order = res.routes[0].waypoint_order;
         const ordered = order.map((i: number) => baseStops[i]);
         setStops(ordered);
-        recalcRoute(ordered, (tot) => {
+        void recalcRoute(ordered, (tot) => {
           saveHistory(ordered.map((s) => s.address), tot);
         });
       },

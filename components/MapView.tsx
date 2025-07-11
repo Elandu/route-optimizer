@@ -1,25 +1,22 @@
 'use client';
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLoadScript, type Libraries } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_LIBRARIES: Libraries = ['places'];
 
-function getDefaultMarkerIcon(): google.maps.Icon | undefined {
-  if (typeof window !== 'undefined' && window.google?.maps) {
-    return {
-      url: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2.png',
-      scaledSize: new window.google.maps.Size(27, 43),
-    };
-  }
-  return undefined;
-}
+const DAY_COLORS = ['#4285F4', '#34A853', '#FB8C00', '#DB4437', '#9C27B0'];
 
-function getHighlightedMarkerIcon(): google.maps.Icon | undefined {
+function makeMarkerIcon(day: number, highlight = false): google.maps.Symbol | undefined {
   if (typeof window !== 'undefined' && window.google?.maps) {
+    const color = DAY_COLORS[(day - 1) % DAY_COLORS.length] ?? '#666';
     return {
-      url: 'https://maps.gstatic.com/mapfiles/api-3/images/spotlight-poi2.png',
-      scaledSize: new window.google.maps.Size(32, 51),
-    };
+      path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z',
+      fillColor: color,
+      fillOpacity: 1,
+      strokeColor: '#000',
+      strokeWeight: 1,
+      scale: highlight ? 1.4 : 1.2,
+    } as google.maps.Symbol;
   }
   return undefined;
 }
@@ -66,8 +63,6 @@ export default function MapView({
   });
 
 
-  const defaultIcon = useMemo(getDefaultMarkerIcon, []);
-  const highlightedIcon = useMemo(getHighlightedMarkerIcon, []);
 
   const indexToLabel = (i: number) => {
     return String.fromCharCode('A'.charCodeAt(0) + i);
@@ -86,6 +81,7 @@ export default function MapView({
       });
       renderer.current = new window.google.maps.DirectionsRenderer({
         preserveViewport: true,
+        suppressMarkers: true,
       });
       renderer.current!.setMap(gmap.current);
       gmap.current!.addListener('idle', () => {
@@ -134,6 +130,8 @@ export default function MapView({
     const activeStops = stops
       .map((s, i) => ({ ...s, rowIndex: i }))
       .filter((s) => !s.isStart);
+    const seen = new Set<string>();
+    const bounds = new window.google.maps.LatLngBounds();
     const all = [start, ...activeStops.map((s) => s.address)].filter(Boolean);
     if (all.length === 0) {
       gmap.current!.setCenter({ lat: -25.2744, lng: 133.7751 });
@@ -149,15 +147,22 @@ export default function MapView({
             (mapState?.center == null || mapState.zoom == null)
           )
             gmap.current!.setCenter(res[0].geometry.location);
+          bounds.extend(res[0].geometry.location);
           if (i > 0) {
             const stop = activeStops[i - 1];
+            if (seen.has(stop.id)) return;
+            seen.add(stop.id);
+            const day = stop.day ?? 1;
+            const baseIcon = makeMarkerIcon(day);
             const marker = new window.google.maps.Marker({
               map: gmap.current!,
               position: res[0].geometry.location,
-              label: indexToLabel(i - 1),
-              icon: defaultIcon,
+              label: { text: indexToLabel(i - 1), color: '#fff' },
+              icon: baseIcon,
               zIndex: i,
             });
+            marker.set('baseIcon', baseIcon);
+            marker.set('day', day);
             marker.addListener('click', () => onSelect?.(stop.rowIndex));
             markers.current.push(marker);
           }
@@ -168,10 +173,12 @@ export default function MapView({
       gmap.current!.setCenter(center);
       gmap.current!.setZoom(zoom);
     }
+    if (markers.current.length > 0) {
+      gmap.current!.fitBounds(bounds);
+    }
   }, [
     start,
     stops,
-    defaultIcon,
     onSelect,
     isLoaded,
     mapState?.center,
@@ -193,10 +200,10 @@ export default function MapView({
     const sIdx = rowToMarkerIndex(selectedIndex);
     markers.current.forEach((m, i) => {
       const highlight = i === hIdx || i === sIdx;
-      m.setIcon(highlight ? highlightedIcon : defaultIcon);
+      m.setIcon(makeMarkerIcon((m.get('day') as number) ?? 1, highlight));
       m.setZIndex(highlight ? 999 : i);
     });
-  }, [hoveredIndex, selectedIndex, stops, defaultIcon, highlightedIcon, isLoaded]);
+  }, [hoveredIndex, selectedIndex, stops, isLoaded]);
 
   useEffect(() => {
     if (!isLoaded || !window.google) return;
@@ -261,10 +268,28 @@ export default function MapView({
     };
   }, [onMapStateChange]);
 
+  const legendDays = Array.from(new Set(stops.map((s) => s.day).filter(Boolean))) as number[];
   return (
-    <div
-      ref={mapRef}
-      className="relative w-full h-full overflow-hidden"
-    />
+    <div className="relative w-full h-full">
+      <div ref={mapRef} className="absolute inset-0" />
+      {legendDays.length > 0 && (
+        <div className="absolute bottom-2 left-2 bg-white bg-opacity-90 p-2 rounded shadow text-xs space-x-2 flex">
+          {legendDays.map((d) => (
+            <div key={d} className="flex items-center space-x-1">
+              <span
+                style={{
+                  backgroundColor: DAY_COLORS[(d - 1) % DAY_COLORS.length],
+                  display: 'inline-block',
+                  width: 12,
+                  height: 12,
+                  borderRadius: '50%',
+                }}
+              />
+              <span>Day {d}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
