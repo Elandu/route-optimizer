@@ -180,8 +180,18 @@ export default function Page() {
     const lines = cleanLines(text);
     if (lines.length > MAX_STOPS) {
       alert(`Maximum ${MAX_STOPS} stops allowed`);
+      return;
     }
-    setBulkAddresses(lines.slice(0, MAX_STOPS).join("\n"));
+    setBulkAddresses(text);
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    const paste = cleanLines(e.clipboardData.getData("text")).join("\n");
+    const target = e.currentTarget;
+    const { selectionStart, selectionEnd, value } = target;
+    const newValue = value.slice(0, selectionStart) + paste + value.slice(selectionEnd);
+    updateBulkAddresses(newValue);
   };
 
 
@@ -715,6 +725,7 @@ export default function Page() {
         <textarea
           value={bulkAddresses}
           onChange={(e) => updateBulkAddresses(e.target.value)}
+          onPaste={handlePaste}
           placeholder="One address per line"
           className="border px-3 py-2 rounded w-full h-40 box-border appearance-none dark:bg-gray-800 dark:text-white md:col-span-2 resize-none overflow-y-auto"
         />
