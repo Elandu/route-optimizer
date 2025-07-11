@@ -687,7 +687,7 @@ export default function Page() {
   const runContent = (
     <div
       ref={containerRef}
-      className="flex flex-col h-full min-h-[calc(100vh-8rem)]"
+      className="flex flex-col h-full min-h-[calc(100vh-8rem)] overflow-hidden"
     >
       <div className="flex flex-col flex-1 overflow-y-auto">
         {isDesktop && (
@@ -708,8 +708,8 @@ export default function Page() {
         <div className="flex-1 overflow-y-auto scroll-touch p-4 pb-24">
           {tableContent}
         </div>
+        {isDesktop && runActions}
       </div>
-      {isDesktop && runActions}
     </div>
   );
 
