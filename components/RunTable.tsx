@@ -1,12 +1,20 @@
 'use client';
 import StopRow, { Stop } from './StopRow';
+import { DateTime } from 'luxon';
 
 function indexToLabel(i: number) {
   return String.fromCharCode('A'.charCodeAt(0) + i);
 }
 
+function dayLabel(day: number | undefined, start: string) {
+  const d = day ?? 1;
+  const date = DateTime.fromISO(start).plus({ days: d - 1 });
+  return `Day ${d} - ${date.toLocaleString(DateTime.DATE_SHORT)}`;
+}
+
 interface Props {
   stops: Stop[];
+  startDate: string;
   draggingId: string | null;
   remove: (id: string) => void;
   onDragStart: (id: string) => void;
@@ -20,6 +28,7 @@ interface Props {
 
 export default function RunTable({
   stops,
+  startDate,
   draggingId,
   remove,
   onDragStart,
@@ -31,7 +40,7 @@ export default function RunTable({
   onSelect,
 }: Props) {
   return (
-    <div className="h-full overflow-y-auto scroll-touch">
+    <div className="h-full">
       <table className="w-full text-sm border-collapse table-fixed">
         <thead>
           <tr className="bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold text-xs sticky top-0 z-10">
@@ -53,7 +62,7 @@ export default function RunTable({
                 <>
                   {showDay && (
                     <tr className="bg-gray-100 dark:bg-gray-900 text-gray-600 dark:text-gray-400 uppercase tracking-wider text-xs sticky top-8 z-10">
-                      <td className="p-2" colSpan={7}>{`Day ${s.day}`}</td>
+                      <td className="p-2" colSpan={7}>{dayLabel(s.day, startDate)}</td>
                     </tr>
                   )}
                   <StopRow
