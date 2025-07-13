@@ -534,6 +534,9 @@ export default function Page() {
       timeBuffer,
       returnToStart,
       endAddress,
+      avoidTolls,
+      avoidFerries,
+      avoidHighways,
     ],
   );
 
