@@ -1,23 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { rateLimit, getIdentifier } from "@/lib/rateLimit";
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ slug: string }> },
+) {
+  const identifier = getIdentifier(req);
+  if (rateLimit(identifier)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+  const { slug } = await params;
   const run = await prisma.routeRun.findUnique({
     where: { slug },
-    include: { addresses: { orderBy: { order: 'asc' } } },
-  })
-  return NextResponse.json(run)
+    include: { addresses: { orderBy: { order: "asc" } } },
+  });
+  return NextResponse.json(run);
 }
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ slug: string }> },
 ) {
-  const { slug } = await params
-  const data = await req.json()
+  const identifier = getIdentifier(req);
+  if (rateLimit(identifier)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+  const { slug } = await params;
+  const data = await req.json();
   if (!Array.isArray(data.addresses)) {
-    return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
   await Promise.all(
@@ -30,13 +42,13 @@ export async function PATCH(
           etd: a.etd ? new Date(a.etd) : null,
           duration: a.duration ?? null,
         },
-      })
-    )
-  )
+      }),
+    ),
+  );
 
   const run = await prisma.routeRun.findUnique({
     where: { slug },
-    include: { addresses: { orderBy: { order: 'asc' } } },
-  })
-  return NextResponse.json(run)
+    include: { addresses: { orderBy: { order: "asc" } } },
+  });
+  return NextResponse.json(run);
 }

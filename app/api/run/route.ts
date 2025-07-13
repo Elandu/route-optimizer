@@ -1,8 +1,13 @@
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { rateLimit, getIdentifier } from "@/lib/rateLimit";
 
 export async function POST(req: Request) {
-  const data = await req.json()
+  const identifier = getIdentifier(req);
+  if (rateLimit(identifier)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+  const data = await req.json();
   const run = await prisma.routeRun.create({
     data: {
       slug: data.slug,
@@ -18,7 +23,7 @@ export async function POST(req: Request) {
         })),
       },
     },
-    include: { addresses: { orderBy: { order: 'asc' } } },
-  })
-  return NextResponse.json(run, { status: 201 })
+    include: { addresses: { orderBy: { order: "asc" } } },
+  });
+  return NextResponse.json(run, { status: 201 });
 }
