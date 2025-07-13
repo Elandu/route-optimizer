@@ -5,6 +5,8 @@ import RunTable from "../components/RunTable";
 import AuthHeader from "../components/AuthHeader";
 import MapView from "../components/MapView";
 import Tabs, { TabItem } from "../components/Tabs";
+import AdminPanel from "../components/AdminPanel";
+import { useUser } from "../UserContext";
 import useMediaQuery from "../lib/useMediaQuery";
 import { addMinutes, formatTime, parseTime } from "../lib/time";
 import { DateTime } from "luxon";
@@ -32,6 +34,7 @@ declare global {
 }
 
 export default function Page() {
+  const { user } = useUser();
   const [startAddress, setStartAddress] = useState("");
   const [startDate, setStartDate] = useState(DateTime.now().toISODate());
   const [startTime, setStartTime] = useState("08:30");
@@ -931,6 +934,10 @@ export default function Page() {
       </div>
     </div>
   );
+
+  const adminContent = (
+    <AdminPanel />
+  );
   const mapTabContent = (
     <div className="h-[70vh] w-full overflow-y-auto">
       <MapView
@@ -951,6 +958,9 @@ export default function Page() {
     ...(!isDesktop ? [{ key: "addresses", title: "Addresses", content: addressesContent }] : []),
     ...(!isDesktop ? [{ key: "map", title: "Map", content: mapTabContent }] : []),
     { key: "settings", title: "Settings", content: settingsContent },
+    ...(user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+      ? [{ key: "admin", title: "Admin", content: adminContent }]
+      : []),
   ];
 
   return (
