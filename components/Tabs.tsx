@@ -70,7 +70,10 @@ export default function Tabs({
       </Tab.List>
       <Tab.Panels className="flex-1 overflow-hidden min-h-0">
         {items.map((item) => (
-          <Tab.Panel key={item.key} className="p-4 mx-auto max-w-screen-lg w-full">
+          <Tab.Panel
+            key={item.key}
+            className="p-4 mx-auto max-w-screen-lg w-full h-full overflow-y-auto scroll-touch"
+          >
             {item.content}
           </Tab.Panel>
         ))}
