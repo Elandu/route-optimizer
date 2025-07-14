@@ -956,14 +956,17 @@ export default function Page() {
     </div>
   );
 
+  const isAdmin =
+    !!user &&
+    !!process.env.NEXT_PUBLIC_ADMIN_EMAIL &&
+    user.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+
   const tabItems = [
     { key: "run", title: "Run", content: runContent },
     ...(!isDesktop ? [{ key: "addresses", title: "Addresses", content: addressesContent }] : []),
     ...(!isDesktop ? [{ key: "map", title: "Map", content: mapTabContent }] : []),
     { key: "settings", title: "Settings", content: settingsContent },
-    ...(user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
-      ? [{ key: "admin", title: "Admin", content: adminContent }]
-      : []),
+    ...(isAdmin ? [{ key: "admin", title: "Admin", content: adminContent }] : []),
   ];
 
   return (
