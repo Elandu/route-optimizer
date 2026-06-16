@@ -1,53 +1,153 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Route Optimizer
 
-## Getting Started
+Field inspection route optimisation for engineers, assessors, and site-based consultants.
 
-First, run the development server:
+Route Optimizer is a Next.js application for planning inspection runs across multiple site addresses. It helps field teams enter inspection locations, calculate a practical driving sequence, estimate arrival and departure times, and view the run on a Google Map.
+
+The current app provides a working browser-based route planning interface. Several broader scheduling, export, and team workflow features are planned and tracked in the roadmap.
+
+## Who It Is For
+
+- Structural, forensic, civil, and building engineers planning inspection days.
+- Insurance assessors and loss adjusters visiting claim sites.
+- Site-based consultants managing multiple field appointments.
+- Operations teams preparing daily inspection runs for field staff.
+
+## Key Features
+
+- Enter a start address and up to 20 inspection stops.
+- Paste multiple addresses, one per line, for faster run setup.
+- Use Google Directions waypoint optimisation to order stops.
+- View the route and stop markers on a Google Map.
+- Set default inspection duration, per-stop duration, start time, and end-of-day time.
+- Calculate ETA, ETD, travel time to the next stop, total travel time, and total run time.
+- Configure route options such as avoiding tolls, ferries, or highways.
+- Choose whether the run returns to the start address or ends elsewhere.
+- Add overnight accommodation handling for longer inspection runs.
+- Store local draft run settings in the browser.
+- Register and log in users with Prisma-backed PostgreSQL storage.
+- Create and retrieve route-run records through API endpoints.
+
+## Screenshots And Demo
+
+Screenshots and a hosted demo are planned.
+
+Suggested placeholders:
+
+- `docs/screenshots/run-planner.png` - route planning view with address input and run table.
+- `docs/screenshots/map-view.png` - map view with calculated route and stop markers.
+- `docs/screenshots/settings.png` - route and schedule settings.
+
+## Tech Stack
+
+- Next.js 15 with the App Router.
+- React 19 and TypeScript.
+- Tailwind CSS with HeroUI components.
+- Google Maps JavaScript API, Places, Directions, and Distance Matrix services.
+- Prisma ORM with PostgreSQL.
+- bcryptjs for password hashing.
+- Luxon for date and time calculations.
+
+## GitHub Repository Details
+
+Suggested repository description:
+
+> Field inspection route optimisation for engineers, assessors, and site-based consultants.
+
+Suggested GitHub topics:
+
+`route-optimization`, `inspections`, `field-service`, `insurance`, `engineering`, `nextjs`, `typescript`, `maps`
+
+## Installation
+
+Prerequisites:
+
+- Node.js 20 or newer.
+- npm.
+- PostgreSQL database, such as Neon or a local PostgreSQL instance.
+- Google Maps API key with Maps JavaScript API, Places API, Directions API, Geocoding API, and Distance Matrix API enabled.
+
+Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create a local environment file:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Set the required environment variables in `.env.local`:
 
-## Learn More
+```bash
+DATABASE_URL="postgresql://user:password@host/database?sslmode=require"
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="your-google-maps-api-key"
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY="your-recaptcha-site-key"
+NEXT_PUBLIC_ADMIN_EMAIL="admin@example.com"
+```
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Backend Setup
-
-This project uses Prisma with a Neon PostgreSQL database. Copy `.env.example` to `.env.local` and provide your `DATABASE_URL`.
-
-Run the following commands to generate the Prisma client and start the development server:
+Generate the Prisma client:
 
 ```bash
 npx prisma generate
+```
+
+Apply the database schema during local setup:
+
+```bash
+npx prisma db push
+```
+
+## Local Development
+
+Start the development server:
+
+```bash
 npm run dev
 ```
 
-API endpoints are available under `/api/run` for creating and managing route runs.
+Open [http://localhost:3000](http://localhost:3000).
 
-## User Registration
+Useful commands:
 
-A registration page is available at `/register`. The form validates input on both the client and server. User passwords are hashed with `bcryptjs` before being saved to the database via Prisma.
+```bash
+npm run build
+npm run start
+npm run lint
+npx prisma studio
+```
+
+Note: the current `lint` script uses `next lint`. If your local Next.js version no longer supports that command, migrate the project to the current ESLint CLI workflow before relying on lint checks in CI.
+
+## Example Workflow
+
+1. Enter the starting address for the inspection day.
+2. Paste the inspection site addresses into the address list.
+3. Set the default inspection duration and working day times.
+4. Choose route options, such as avoiding tolls or returning to the start address.
+5. Select **Generate Run**.
+6. Review the generated order, ETA, ETD, travel time, and map.
+7. Adjust individual inspection durations or drag stops into a manual order if needed.
+
+Example inspection data is available in [`examples/inspection-locations.csv`](examples/inspection-locations.csv).
+
+## Roadmap
+
+See [`ROADMAP.md`](ROADMAP.md) for planned milestones. Current priorities include a stronger route optimisation MVP, multi-day scheduling, priority weighting, map integration improvements, exports, team allocation, and calendar integration.
+
+## Contributing
+
+Contributions are welcome. Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening an issue or pull request.
+
+Good first contributions include:
+
+- Improving setup documentation.
+- Adding tests around scheduling and time calculations.
+- Refining route-planning UI states.
+- Adding import and export helpers.
+
+## Licence
+
+This project is licensed under the MIT Licence. See [`LICENSE`](LICENSE) for details.
